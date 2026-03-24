@@ -8,8 +8,8 @@ const geistSans = Geist({
 });
 
 export const metadata = {
-  title: "AI校园 - 一站式智能空间",
-  description: "覆盖师生全场景的一站式智能校园平台",
+  title: "超星 AI 校园 OS",
+  description: "面向校园场景的统一 AI 工作台与校园操作系统入口",
 };
 
 export default function RootLayout({ children }) {

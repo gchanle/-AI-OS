@@ -4,6 +4,11 @@
     height: calc(100vh - var(--navbar-height));
     position: relative;
     overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(245, 247, 250, 0.92)),
+        linear-gradient(90deg, rgba(0, 102, 204, 0.03) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(0, 102, 204, 0.02) 1px, transparent 1px);
+    background-size: auto, 28px 28px, 28px 28px;
 }
 
 .main-content {
@@ -11,6 +16,20 @@
     min-width: 0;
     position: relative;
     overflow: hidden;
+    z-index: 1;
+}
+
+.home-layout.landing-mode .main-content::before,
+.home-layout.chat-mode .main-content::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+}
+
+.home-layout.chat-mode .main-content {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08));
 }
 
 /* Global background orbs */
@@ -46,4 +65,20 @@
     background: radial-gradient(circle, rgba(52, 199, 89, 0.1), transparent);
     top: 40%; right: 30%;
     animation-delay: -14s;
+}
+
+@media (max-width: 960px) {
+    .home-layout {
+        display: block;
+        overflow: auto;
+    }
+
+    .main-content {
+        min-height: calc(100vh - var(--navbar-height));
+    }
+
+    .ls-sidebar,
+    .right-sidebar {
+        display: none !important;
+    }
 }

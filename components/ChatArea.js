@@ -33,6 +33,42 @@ export default function ChatArea({ initialMessage, sessionId }) {
         }
     }, [sessionId, initialMessage]);
 
+    const persistConversation = useCallback((allMessages, finalContent) => {
+        try {
+            const updatedComplete = [...allMessages, { role: 'ai', content: finalContent, time: new Date() }];
+            const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+            let sid = sessionStorage.getItem('current_sid');
+
+            if (!sid) {
+                sid = `session-${Date.now()}`;
+                sessionStorage.setItem('current_sid', sid);
+            }
+
+            const existingIdx = sessions.findIndex((session) => session.id === sid);
+            const firstUserMessage = updatedComplete.find((message) => message.role === 'user')?.content || '新对话';
+            const sessionObj = {
+                id: sid,
+                title: firstUserMessage.substring(0, 15) + (firstUserMessage.length > 15 ? '...' : ''),
+                date: new Date().toLocaleDateString(),
+                messages: updatedComplete,
+            };
+
+            if (existingIdx >= 0) {
+                sessions[existingIdx] = sessionObj;
+            } else {
+                sessions.unshift(sessionObj);
+            }
+
+            localStorage.setItem('chat_sessions', JSON.stringify(sessions));
+            window.dispatchEvent(new Event('chat-history-updated'));
+
+            return sid;
+        } catch (error) {
+            console.error('History save error', error);
+            return null;
+        }
+    }, []);
+
     const sendToAI = useCallback(async (allMessages) => {
         setIsTyping(true);
 
@@ -105,54 +141,34 @@ export default function ChatArea({ initialMessage, sessionId }) {
                 }
             }
 
-            // Finalize the message
+            const finalContent = fullContent || '抱歉，我暂时无法回答这个问题，请稍后再试。';
+
             setMessages((prev) => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
                 if (lastIdx >= 0 && updated[lastIdx].role === 'ai') {
                     updated[lastIdx] = {
                         ...updated[lastIdx],
-                        content: fullContent || '抱歉，我暂时无法回答这个问题，请稍后再试。',
+                        content: finalContent,
                         streaming: false,
                     };
                 }
-                
-                // Save to localStorage
-                try {
-                    const finalContent = fullContent || '抱歉，我暂时无法回答这个问题，请稍后再试。';
-                    const updatedComplete = [...allMessages, { role: 'ai', content: finalContent, time: new Date() }];
-                    const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-                    let sid = sessionStorage.getItem('current_sid');
-                    if (!sid) {
-                        sid = 'session-' + Date.now();
-                        sessionStorage.setItem('current_sid', sid);
-                    }
-                    const existingIdx = sessions.findIndex(s => s.id === sid);
-                    const sessionObj = {
-                        id: sid,
-                        title: updatedComplete[0].content.substring(0, 15) + (updatedComplete[0].content.length > 15 ? '...' : ''),
-                        date: new Date().toLocaleDateString(),
-                        messages: updatedComplete
-                    };
-                    if (existingIdx >= 0) {
-                        sessions[existingIdx] = sessionObj;
-                    } else {
-                        sessions.unshift(sessionObj);
-                    }
-                    localStorage.setItem('chat_sessions', JSON.stringify(sessions));
-                    window.dispatchEvent(new Event('chat-history-updated'));
-                } catch(e) { console.error('History save error', e); }
 
                 return updated;
             });
 
+            const persistedSessionId = persistConversation(allMessages, finalContent);
+
             // Extract tasks asynchronously
             try {
-                const userText = allMessages[allMessages.length-1]?.content || '';
+                const userText = allMessages[allMessages.length - 1]?.content || '';
                 fetch('/api/extract-tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: `User: ${userText}\nAI: ${fullContent}`, sessionId: sid })
+                    body: JSON.stringify({
+                        text: `User: ${userText}\nAI: ${finalContent}`,
+                        sessionId: persistedSessionId,
+                    })
                 }).then(res => res.json()).then(data => {
                     if (data.tasks && data.tasks.length > 0) {
                         const existingTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
@@ -180,7 +196,7 @@ export default function ChatArea({ initialMessage, sessionId }) {
         } finally {
             setIsTyping(false);
         }
-    }, []);
+    }, [persistConversation]);
 
     // Handle initial message from landing page
     useEffect(() => {
@@ -214,16 +230,39 @@ export default function ChatArea({ initialMessage, sessionId }) {
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const firstUserMessage = messages.find((message) => message.role === 'user')?.content || initialMessage || '新的校园任务';
+    const workspaceTitle = firstUserMessage.length > 40 ? `${firstUserMessage.slice(0, 40)}...` : firstUserMessage;
+    const workspaceBadges = [
+        sessionId ? '历史会话' : '当前工作区',
+        '校园任务追踪',
+        'Campus OS',
+    ];
+
     return (
         <div className="chat-area">
             <div className="messages-container">
                 <div className="chat-container-inner">
+                    <div className="chat-workspace-head glass">
+                        <div className="chat-workspace-copy">
+                            <span className="chat-workspace-badge">萤火虫工作区</span>
+                            <h2 className="chat-workspace-title">{workspaceTitle}</h2>
+                            <p className="chat-workspace-desc">
+                                围绕当前问题持续组织校园上下文，让对话、任务与后续动作都留在同一个工作面板里。
+                            </p>
+                        </div>
+                        <div className="chat-workspace-tags">
+                            {workspaceBadges.map((badge) => (
+                                <span key={badge} className="chat-workspace-tag">{badge}</span>
+                            ))}
+                        </div>
+                    </div>
+
                     {messages.length === 0 && !isTyping ? (
                         <div className="chat-empty">
                             <div className="empty-icon glass-strong">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                             </div>
-                            <p>我是萤火虫，有什么我可以帮你的吗？</p>
+                            <p>我是萤火虫，准备好为你整理校园事务、学习任务和系统信息了。</p>
                         </div>
                     ) : (
                         messages.map((msg, idx) => (
@@ -265,7 +304,7 @@ export default function ChatArea({ initialMessage, sessionId }) {
                     <div className="chat-input-box glass-strong">
                         <textarea
                             className="chat-textarea"
-                            placeholder="继续对话..."
+                            placeholder="继续推进当前校园任务，或补充新的上下文..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -281,7 +320,7 @@ export default function ChatArea({ initialMessage, sessionId }) {
                             </svg>
                         </button>
                     </div>
-                    <div className="chat-footer-hint">AI 生成内容仅供参考，请注意甄别信息准确性。</div>
+                    <div className="chat-footer-hint">AI 生成内容仅供参考，涉及制度与流程时请以校园正式通知为准。</div>
                 </div>
             </div>
         </div>

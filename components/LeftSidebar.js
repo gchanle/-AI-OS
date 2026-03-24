@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import TasksModal from './TasksModal';
 import './LeftSidebar.css';
 
-// 模拟任务看板数据
-const activeTasks = [
-    { id: 1, title: '准备期末复习大纲', progress: 60, status: 'in-progress' },
-    { id: 2, title: '修正论文第二章', progress: 100, status: 'completed' },
-];
-
 export default function LeftSidebar({ onNewChat, onSelectSession }) {
-  const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const [activeChat, setActiveChat] = useState(null);
     const [tasks, setTasks] = useState([]);
@@ -40,7 +32,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
         const loadData = () => {
             try {
                 const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks'));
-                if (storedTasks && storedTasks.length > 0) setTasks(storedTasks.slice(0, 5));
+                if (storedTasks && storedTasks.length > 0) setTasks(storedTasks);
                 
                 const storedChats = JSON.parse(localStorage.getItem('chat_sessions'));
                 if (storedChats && storedChats.length > 0) setChats(storedChats);

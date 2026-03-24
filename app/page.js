@@ -35,7 +35,7 @@ export default function Home() {
   };
 
   return (
-    <div className="home-layout">
+    <div className={`home-layout ${chatStarted ? 'chat-mode' : 'landing-mode'}`}>
       {/* 全局背景修饰（蓝白色块） */}
       <div className="global-bg">
         <div className="bg-orb bg-orb-1"></div>

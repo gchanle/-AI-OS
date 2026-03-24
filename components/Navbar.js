@@ -2,8 +2,6 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import './Navbar.css';
-
-import Image from 'next/image';
 import React from 'react';
 
 const icons = {
@@ -36,7 +34,10 @@ export default function Navbar() {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zm0 20l-10-5V7l10 5 10-5v10l-10 5z"/></svg>
                         </div>
                     </div>
-                    <span className="logo-text">超星大学</span>
+                    <div className="logo-lockup">
+                        <span className="logo-text">超星</span>
+                        <span className="logo-product">AI 校园 OS</span>
+                    </div>
                 </Link>
 
                 <div className="navbar-links">
