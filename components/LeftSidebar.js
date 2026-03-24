@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TasksModal from './TasksModal';
 import './LeftSidebar.css';
 
@@ -15,6 +15,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [calendarAnchor, setCalendarAnchor] = useState(null);
     const [hoveredCell, setHoveredCell] = useState(null);
+    const heatmapCardRef = useRef(null);
 
     const handleDeleteTask = (taskId) => {
         const newTasks = tasks.filter(t => t.id !== taskId);
@@ -99,6 +100,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
             }
         });
 
+        const dayTotals = [];
         const calendar = [];
         for (let i = 0; i < 42; i++) {
             const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
@@ -106,21 +108,73 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
             const cCount = chatMap[dStr] || 0;
             const tCount = taskMap[dStr] || 0;
             const total = cCount + tCount;
-            let level = 0;
-            if (total > 0) level = 1;
-            if (total >= 2) level = 2;
-            if (total >= 4) level = 3;
-            if (total >= 6) level = 4;
+            dayTotals.push(total);
             const formattedDate = `${d.getMonth()+1}月${d.getDate()}日`;
-            calendar.push({ type: 'day', id: i, formattedDate, level, dStr, cCount, tCount });
+            calendar.push({ type: 'day', id: i, formattedDate, dStr, cCount, tCount, total });
         }
-        setCalendarProps({ calendar, startDate, endDate });
+
+        const maxDensity = Math.max(...dayTotals, 0);
+        const calendarWithLevels = calendar.map((cell) => {
+            let level = 0;
+
+            if (cell.total > 0) {
+                if (maxDensity <= 3) {
+                    level = Math.min(4, cell.total);
+                } else {
+                    level = Math.min(4, Math.max(1, Math.ceil((cell.total / maxDensity) * 4)));
+                }
+            }
+
+            return {
+                ...cell,
+                level,
+            };
+        });
+
+        setCalendarProps({ calendar: calendarWithLevels, startDate, endDate });
     }, [calendarAnchor, pageOffset, chats, tasks]);
 
     const { calendar: calendarData, startDate, endDate } = calendarProps;
     const handlePrevPage = () => setPageOffset(prev => prev - 1);
     const handleNextPage = () => setPageOffset(prev => prev + 1);
-    const activeHoverCell = hoveredCell || calendarData.find((cell) => cell.level > 0) || calendarData[calendarData.length - 1];
+    const totalChatsInRange = calendarData.reduce((sum, cell) => sum + cell.cCount, 0);
+    const totalTasksInRange = calendarData.reduce((sum, cell) => sum + cell.tCount, 0);
+
+    const handleHeatCellEnter = (event, cell) => {
+        const cardRect = heatmapCardRef.current?.getBoundingClientRect();
+        const cellRect = event.currentTarget.getBoundingClientRect();
+
+        if (!cardRect) {
+            setHoveredCell(cell);
+            return;
+        }
+
+        const nextLeft = Math.min(
+            Math.max(cellRect.left - cardRect.left + (cellRect.width / 2), 84),
+            cardRect.width - 84
+        );
+
+        setHoveredCell({
+            ...cell,
+            tooltipLeft: nextLeft,
+        });
+    };
+
+    const formatHistoryTime = (chat) => {
+        const raw = chat.updatedAt || chat.time || chat.date;
+        const date = new Date(raw);
+
+        if (Number.isNaN(date.getTime())) {
+            return raw;
+        }
+
+        return date.toLocaleString('zh-CN', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
 
     if (collapsed) {
         return (
@@ -168,7 +222,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <div className="ls-live-body">
                 {/* 1. 任务进度看板 */}
                 <div className="ls-section">
                     <div className="ls-sec-title-area">
@@ -264,24 +318,38 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                             <button onClick={handleNextPage}>&gt;</button>
                         </div>
                     </div>
-                    <div className="ls-heatmap-card">
-                        <div className="calendar-grid">
-                            {calendarData.map((cell) => (
-                                <div 
-                                    key={cell.id} 
-                                    className={`heat-cell heat-${cell.level}`} 
-                                    onMouseEnter={() => setHoveredCell(cell)}
-                                    onMouseLeave={() => setHoveredCell(null)}
-                                ></div>
-                            ))}
-                        </div>
-                        {activeHoverCell && (
-                            <div className="ls-heatmap-meta">
-                                <strong>{activeHoverCell.formattedDate}</strong>
-                                <span>{activeHoverCell.cCount} 条对话</span>
-                                <span>{activeHoverCell.tCount} 个任务</span>
+                    <div
+                        className="ls-heatmap-card"
+                        ref={heatmapCardRef}
+                        onMouseLeave={() => setHoveredCell(null)}
+                    >
+                        {hoveredCell && (
+                            <div
+                                className="ls-heatmap-tooltip"
+                                style={{ left: hoveredCell.tooltipLeft || '50%' }}
+                            >
+                                <strong>{hoveredCell.formattedDate}</strong>
+                                <span>{hoveredCell.cCount} 条对话</span>
+                                <span>{hoveredCell.tCount} 个任务</span>
                             </div>
                         )}
+                        <div className="ls-heatmap-grid-wrap">
+                            <div className="calendar-grid">
+                                {calendarData.map((cell) => (
+                                    <div 
+                                        key={cell.id} 
+                                        className={`heat-cell heat-${cell.level}`}
+                                        onMouseEnter={(event) => handleHeatCellEnter(event, cell)}
+                                        title={`${cell.formattedDate} · ${cell.cCount} 条对话 · ${cell.tCount} 个任务`}
+                                    ></div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="ls-heatmap-meta">
+                            <strong>最近 42 天</strong>
+                            <span>{totalChatsInRange} 条对话</span>
+                            <span>{totalTasksInRange} 个任务</span>
+                        </div>
                     </div>
                 </div>
 
@@ -302,12 +370,12 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                                     }}
                                 >
                                     <div className="ls-chat-title">{chat.title}</div>
-                                    <div className="ls-chat-time">{chat.time || chat.date}</div>
+                                    <div className="ls-chat-time">{formatHistoryTime(chat)}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    </>
+                    </div>
                 )}
             </div>
 

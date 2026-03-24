@@ -1,20 +1,13 @@
-import '../services/placeholder.css';
+'use client';
+import ExternalWorkspaceShell from '@/components/ExternalWorkspaceShell';
 
-export const metadata = { title: 'AI智能体 - AI校园' };
+const agentNavItems = [
+    { id: 'agents', label: '智能体管理', url: 'https://demo1.openai.chaoxing.com/personal/own/agent', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" /></svg> },
+    { id: 'knowledge', label: '知识库管理', url: 'https://demo1.openai.chaoxing.com/personal/own/knowledge', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg> },
+    { id: 'team', label: '团队管理', url: 'https://demo1.openai.chaoxing.com/personal/team/myTeam', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
+    { id: 'market', label: '单位智能体市场', url: 'https://demo1.openai.chaoxing.com/personal/team/myTeam', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2l1.5 3H21l-2 7H8.5L7 19H4" /><circle cx="10" cy="21" r="1" /><circle cx="18" cy="21" r="1" /></svg> },
+];
 
 export default function AgentBuilderPage() {
-    return (
-        <div className="placeholder-page">
-            <div className="placeholder-content">
-                <span className="placeholder-icon">🤖</span>
-                <h1>AI智能体</h1>
-                <p>智能体创建与管理平台，即将上线</p>
-                <div className="placeholder-features">
-                    <div className="ph-feature"><span>🏪</span>智能体广场</div>
-                    <div className="ph-feature"><span>🛠️</span>个人工作台</div>
-                    <div className="ph-feature"><span>👥</span>共建团队</div>
-                </div>
-            </div>
-        </div>
-    );
+    return <ExternalWorkspaceShell accent="AI" title="能力中心" navItems={agentNavItems} loadingNoun="智能体页面" />;
 }

@@ -314,6 +314,13 @@
     padding: 4px 4px 4px 2px;
     gap: 10px;
     min-height: 132px;
+    cursor: text;
+    border-radius: 22px;
+    transition: background 0.2s ease;
+}
+
+.search-box:focus-within .search-input-area {
+    background: rgba(255, 255, 255, 0.54);
 }
 
 .search-textarea {

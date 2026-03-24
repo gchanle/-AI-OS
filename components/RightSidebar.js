@@ -154,7 +154,7 @@ export default function RightSidebar() {
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <div className="rs-live-body">
                 {/* INFO TAB */}
                 {activeTab === 'info' && (
                     <div className="rs-tab-content">
@@ -313,7 +313,7 @@ export default function RightSidebar() {
                         </div>
                     </div>
                 )}
-                    </>
+                    </div>
                 )}
             </div>
         </aside>

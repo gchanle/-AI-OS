@@ -114,6 +114,14 @@
     gap: 18px;
 }
 
+.ls-live-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100%;
+    animation: fadeIn 0.28s ease-out;
+}
+
 .ls-skeleton-section {
     display: flex;
     flex-direction: column;
@@ -325,11 +333,12 @@
 
 /* Heatmap Calendar */
 .ls-heatmap-card {
+    position: relative;
     padding: 10px;
     border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.02);
     border: 1px solid var(--border-light);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .ls-calendar-nav {
@@ -356,6 +365,13 @@
     background: rgba(0, 0, 0, 0.05);
 }
 
+.ls-heatmap-grid-wrap {
+    overflow: hidden;
+    border-radius: 10px;
+    padding: 2px;
+    margin: 0 -2px;
+}
+
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(14, minmax(0, 1fr));
@@ -367,8 +383,8 @@
     width: 100%;
     height: auto;
     aspect-ratio: 1 / 1;
-    border-radius: 2px;
-    transition: transform 0.1s ease;
+    border-radius: 4px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
     background: rgba(0, 0, 0, 0.04);
     min-width: 0;
 }
@@ -378,9 +394,9 @@
     pointer-events: none;
 }
 
-.heat-cell:not(.empty):hover {
+.heat-cell:hover {
     transform: scale(1.15);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
 }
 
 .heat-0 {
@@ -401,6 +417,30 @@
 
 .heat-4 {
     background: rgba(52, 199, 89, 1);
+}
+
+.ls-heatmap-tooltip {
+    position: absolute;
+    top: -54px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(18, 24, 33, 0.9);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 11px;
+    white-space: nowrap;
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+    pointer-events: none;
+    z-index: 2;
+    animation: fadeIn 0.14s ease-out;
+}
+
+.ls-heatmap-tooltip strong {
+    color: white;
+    font-weight: 600;
 }
 
 .ls-heatmap-meta {

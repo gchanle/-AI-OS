@@ -146,6 +146,10 @@
     gap: 18px;
 }
 
+.rs-live-body {
+    animation: fadeIn 0.28s ease-out;
+}
+
 .rs-skeleton-section {
     display: flex;
     flex-direction: column;

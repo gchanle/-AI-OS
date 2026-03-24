@@ -327,20 +327,6 @@ export default function ChatArea({
                             </div>
                         </div>
                         <div className="chat-workspace-tags">
-                            <label className="chat-head-model-picker">
-                                <span className="chat-head-model-label">主对话模型</span>
-                                <select
-                                    className="chat-head-model-select"
-                                    value={activeModelId}
-                                    onChange={handleModelChange}
-                                >
-                                    {availableModels.map((model) => (
-                                        <option key={model.id} value={model.id}>
-                                            {model.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
                             {workspaceBadges.map((badge) => (
                                 <span key={badge} className="chat-workspace-tag">{badge}</span>
                             ))}
@@ -401,6 +387,22 @@ export default function ChatArea({
                                     </span>
                                 ))}
                             </div>
+                        </div>
+                        <div className="chat-toolbar-actions">
+                            <label className="chat-toolbar-model-picker">
+                                <span className="chat-toolbar-model-label">主对话模型</span>
+                                <select
+                                    className="chat-toolbar-model-select"
+                                    value={activeModelId}
+                                    onChange={handleModelChange}
+                                >
+                                    {availableModels.map((model) => (
+                                        <option key={model.id} value={model.id}>
+                                            {model.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
                         </div>
                     </div>
                     <div

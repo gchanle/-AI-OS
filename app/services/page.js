@@ -1,6 +1,5 @@
 'use client';
-import { useState } from 'react';
-import './services.css';
+import ExternalWorkspaceShell from '@/components/ExternalWorkspaceShell';
 
 // 办事大厅外置导航映射表
 const serviceNavItems = [
@@ -13,84 +12,5 @@ const serviceNavItems = [
 ];
 
 export default function ServicesPage() {
-    const [activeTab, setActiveTab] = useState(serviceNavItems[0]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-    const handleTabSwitch = (tab) => {
-        if (tab.id === activeTab.id) return;
-        setIsLoading(true);
-        setActiveTab(tab);
-    };
-
-    const openInCurrentWindow = () => {
-        window.location.href = activeTab.url;
-    };
-
-    const openInNewTab = () => {
-        window.open(activeTab.url, '_blank', 'noopener,noreferrer');
-    };
-
-    return (
-        <div className="services-layout">
-            
-            {/* 左侧原生次级导航边栏 */}
-            <div className={`services-sidebar glass-strong ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-                <div className="ss-header">
-                    {!isSidebarCollapsed && <h2><span className="ai-accent">AI</span> 办事大厅</h2>}
-                    <button 
-                        className="ss-toggle-btn" 
-                        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-                        title={isSidebarCollapsed ? "展开边栏" : "收起边栏"}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    </button>
-                </div>
-                <div className="ss-nav-list">
-                    {serviceNavItems.map(item => (
-                        <button 
-                            key={item.id}
-                            className={`ss-nav-item ${activeTab.id === item.id ? 'active' : ''}`}
-                            onClick={() => handleTabSwitch(item)}
-                            title={isSidebarCollapsed ? item.label : undefined}
-                        >
-                            <span className="ss-icon">{item.icon}</span>
-                            {!isSidebarCollapsed && <span>{item.label}</span>}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* 右侧主内容区 (套壳被视觉裁切的 iframe) */}
-            <div className="services-content">
-                <div className="services-shell-toolbar glass-strong">
-                    <div className="services-shell-copy">
-                        <span className="services-shell-kicker">外部系统接入</span>
-                        <strong>{activeTab.label}</strong>
-                        <span>如果外部系统阻止嵌入，请改用当前窗口接管或新标签打开。</span>
-                    </div>
-                    <div className="services-shell-actions">
-                        <button className="services-shell-btn primary" onClick={openInCurrentWindow}>当前窗口打开</button>
-                        <button className="services-shell-btn" onClick={openInNewTab}>新标签打开</button>
-                    </div>
-                </div>
-                {isLoading && (
-                    <div className="services-loading-overlay">
-                        <div className="spinner"></div>
-                        <p>正在安全接入 {activeTab.label} 数据...</p>
-                    </div>
-                )}
-                
-                <div className="iframe-wrapper">
-                    <iframe 
-                        key={activeTab.id}
-                        src={activeTab.url} 
-                        className="services-iframe"
-                        title={activeTab.label}
-                        onLoad={() => setIsLoading(false)}
-                    />
-                </div>
-            </div>
-        </div>
-    );
+    return <ExternalWorkspaceShell accent="AI" title="办事大厅" navItems={serviceNavItems} loadingNoun="办事页面" />;
 }

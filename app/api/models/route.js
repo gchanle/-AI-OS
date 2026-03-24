@@ -12,6 +12,24 @@ let cachedModels = null;
 let cachedAt = 0;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
+function loadEnvCandidates() {
+  const raw = process.env.DASHSCOPE_MODEL_CANDIDATES || '';
+
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [id, label] = item.split('|').map((part) => part.trim());
+      const resolved = resolveChatModel(id);
+
+      return {
+        ...resolved,
+        label: label || resolved.label,
+      };
+    });
+}
+
 async function probeModel(modelId) {
   const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
     method: 'POST',
@@ -41,8 +59,14 @@ export async function GET() {
     return NextResponse.json({ models: cachedModels });
   }
 
+  const probeCandidates = Array.from(
+    new Map(
+      [...chatModelCandidates, ...loadEnvCandidates()].map((candidate) => [candidate.id, candidate])
+    ).values()
+  );
+
   const results = await Promise.all(
-    chatModelCandidates.map(async (candidate) => ({
+    probeCandidates.map(async (candidate) => ({
       candidate,
       supported: await probeModel(candidate.id).catch(() => false),
     }))
