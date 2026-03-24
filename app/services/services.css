@@ -1,0 +1,183 @@
+.services-layout {
+    display: flex;
+    width: 100%;
+    height: calc(100vh - var(--navbar-height));
+    background: #f5f7fa;
+    overflow: hidden;
+}
+
+/* 左侧原生菜单边栏 */
+.services-sidebar {
+    width: 200px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-light);
+    flex-shrink: 0;
+    z-index: 20;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
+    transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.services-sidebar.collapsed {
+    width: 68px;
+}
+
+.ss-header {
+    padding: 24px 16px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.services-sidebar.collapsed .ss-header {
+    padding: 24px 0 16px;
+    justify-content: center;
+}
+
+.ss-header h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-left: 6px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ss-header .ai-accent {
+    font-weight: 800;
+    font-size: 16px;
+    font-family: var(--font-geist-sans), system-ui;
+    background: linear-gradient(135deg, var(--primary) 0%, #8a2be2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0;
+}
+
+/* Toggle Button */
+.ss-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ss-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary);
+}
+
+.ss-nav-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 12px;
+    gap: 2px;
+}
+
+.ss-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.services-sidebar.collapsed .ss-nav-item {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.ss-nav-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-primary);
+}
+
+.ss-nav-item.active {
+    background: var(--primary-lighter);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.ss-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    opacity: 0.8;
+}
+
+.ss-nav-item.active .ss-icon {
+    opacity: 1;
+}
+
+/* 右侧内容套壳区 */
+.services-content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.services-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f5f7fa;
+    z-index: 10;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin { 
+    100% { transform: rotate(360deg); } 
+}
+
+/* 视觉裁切容器 (Clipping Hack) */
+.iframe-wrapper {
+    width: 100%;
+    /* 假设原版导航栏高度约为 64px，将整个 iframe 容量高度相应拉长 */
+    height: calc(100% + 64px); 
+    /* 强行将这个 iframe 向上拉拽 64px，把原版导航部分拉拽到看不见的地方 */
+    margin-top: -64px; 
+    overflow: hidden;
+    position: relative;
+}
+
+.services-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: transparent;
+}
