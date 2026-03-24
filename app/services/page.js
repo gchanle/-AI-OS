@@ -23,6 +23,14 @@ export default function ServicesPage() {
         setActiveTab(tab);
     };
 
+    const openInCurrentWindow = () => {
+        window.location.href = activeTab.url;
+    };
+
+    const openInNewTab = () => {
+        window.open(activeTab.url, '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <div className="services-layout">
             
@@ -55,6 +63,17 @@ export default function ServicesPage() {
 
             {/* 右侧主内容区 (套壳被视觉裁切的 iframe) */}
             <div className="services-content">
+                <div className="services-shell-toolbar glass-strong">
+                    <div className="services-shell-copy">
+                        <span className="services-shell-kicker">外部系统接入</span>
+                        <strong>{activeTab.label}</strong>
+                        <span>如果外部系统阻止嵌入，请改用当前窗口接管或新标签打开。</span>
+                    </div>
+                    <div className="services-shell-actions">
+                        <button className="services-shell-btn primary" onClick={openInCurrentWindow}>当前窗口打开</button>
+                        <button className="services-shell-btn" onClick={openInNewTab}>新标签打开</button>
+                    </div>
+                </div>
                 {isLoading && (
                     <div className="services-loading-overlay">
                         <div className="spinner"></div>

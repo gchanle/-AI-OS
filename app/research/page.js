@@ -24,6 +24,14 @@ export default function ResearchPage() {
         setActiveTab(tab);
     };
 
+    const openInCurrentWindow = () => {
+        window.location.href = activeTab.url;
+    };
+
+    const openInNewTab = () => {
+        window.open(activeTab.url, '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <div className="research-layout">
             
@@ -56,6 +64,17 @@ export default function ResearchPage() {
 
             {/* 右侧主内容区 (套壳被视觉裁切的 iframe) */}
             <div className="research-content">
+                <div className="research-shell-toolbar glass-strong">
+                    <div className="research-shell-copy">
+                        <span className="research-shell-kicker">外部系统接入</span>
+                        <strong>{activeTab.label}</strong>
+                        <span>如果外部系统限制 iframe 登录，请改用当前窗口接管或新标签打开。</span>
+                    </div>
+                    <div className="research-shell-actions">
+                        <button className="research-shell-btn primary" onClick={openInCurrentWindow}>当前窗口打开</button>
+                        <button className="research-shell-btn" onClick={openInNewTab}>新标签打开</button>
+                    </div>
+                </div>
                 {isLoading && (
                     <div className="research-loading-overlay">
                         <div className="spinner"></div>

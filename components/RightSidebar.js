@@ -52,10 +52,8 @@ export default function RightSidebar() {
     const [activeTab, setActiveTab] = useState('todo');
     const [collapsed, setCollapsed] = useState(false);
     const [liveData, setLiveData] = useState({ weibo: [], news: [] });
-    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
         let mounted = true;
         const fetchNews = async () => {
             try {
@@ -131,7 +129,7 @@ export default function RightSidebar() {
                 </div>
             </div>
 
-            <div className="rs-body" style={{ opacity: isMounted ? 1 : 0, transition: 'opacity 0.2s var(--ease-out)' }}>
+            <div className="rs-body">
                 {/* INFO TAB */}
                 {activeTab === 'info' && (
                     <div className="rs-tab-content">

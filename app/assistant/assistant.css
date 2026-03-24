@@ -138,6 +138,68 @@
     overflow: hidden;
 }
 
+.assistant-shell-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 16;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 18px;
+}
+
+.assistant-shell-copy {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.assistant-shell-copy strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.assistant-shell-kicker {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.assistant-shell-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.assistant-shell-btn {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.assistant-shell-btn.primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
 .assistant-loading-overlay {
     position: absolute;
     inset: 0;
@@ -180,4 +242,13 @@
     border: none;
     display: block;
     background: transparent;
+}
+
+@media (max-width: 960px) {
+    .assistant-shell-toolbar,
+    .assistant-shell-copy,
+    .assistant-shell-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

@@ -1,5 +1,6 @@
 // Mock data for AI Campus platform
 import React from 'react';
+import { campusCapabilities, defaultCapabilityIds } from './workspace';
 
 // Icons 
 const IconPaper = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>;
@@ -106,10 +107,15 @@ export const sampleQuestions = [
   '如何预约图书馆的研讨室？',
 ];
 
-export const agentList = [
-  { id: 1, name: '教务系统', desc: '选课安排、成绩查询、课表同步', enabled: true, icon: <IconExam /> },
-  { id: 2, name: '学工系统', desc: '奖助学金、请假备案、宿舍管理', enabled: true, icon: <IconService /> },
-  { id: 3, name: '办事大厅', desc: '一网通办、行政审批、流程查询', enabled: true, icon: <IconPaper /> },
-  { id: 4, name: '图书馆', desc: '馆藏检索、借阅记录、空间预约', enabled: false, icon: <IconResearch /> },
-  { id: 5, name: '自建智能体', desc: '各院系专业定制AI导师及学术应用', enabled: false, icon: <IconBrain /> },
-];
+export const agentList = campusCapabilities.map((capability) => ({
+  id: capability.id,
+  name: capability.name,
+  desc: capability.source,
+  enabled: defaultCapabilityIds.includes(capability.id),
+  icon:
+    capability.id === 'services' ? <IconService /> :
+    capability.id === 'research' ? <IconResearch /> :
+    capability.id === 'assistant' ? <IconExam /> :
+    capability.id === 'library' ? <IconEarth /> :
+    <IconBrain />,
+}));

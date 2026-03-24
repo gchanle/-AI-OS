@@ -1,11 +1,24 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+    capabilityMap,
+    chatModelMap,
+    chatModelOptions,
+} from '@/data/workspace';
 import './ChatArea.css';
 
-export default function ChatArea({ initialMessage, sessionId }) {
+export default function ChatArea({
+    initialMessage,
+    sessionId,
+    defaultCapabilityIds,
+    preferredModelId,
+    onPreferredModelChange,
+}) {
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [activeCapabilityIds, setActiveCapabilityIds] = useState(defaultCapabilityIds);
+    const [activeModelId, setActiveModelId] = useState(preferredModelId);
     const messagesEndRef = useRef(null);
     const hasInitialized = useRef(false);
     const abortControllerRef = useRef(null);
@@ -16,6 +29,13 @@ export default function ChatArea({ initialMessage, sessionId }) {
 
     useEffect(() => { scrollToBottom(); }, [messages]);
 
+    useEffect(() => {
+        if (!sessionId) {
+            setActiveCapabilityIds(defaultCapabilityIds);
+            setActiveModelId(preferredModelId);
+        }
+    }, [sessionId, defaultCapabilityIds, preferredModelId]);
+
     // Update messages when sessionId changes
     useEffect(() => {
         if (sessionId) {
@@ -24,16 +44,20 @@ export default function ChatArea({ initialMessage, sessionId }) {
                 const found = sessions.find(s => s.id === sessionId);
                 if (found) {
                     setMessages(found.messages);
+                    setActiveCapabilityIds(found.meta?.capabilityIds?.length ? found.meta.capabilityIds : defaultCapabilityIds);
+                    setActiveModelId(found.meta?.modelId || preferredModelId);
                     hasInitialized.current = true; // prevent initialMessage from triggering
                 }
             } catch(e) {}
         } else if (!initialMessage) {
             setMessages([]);
             hasInitialized.current = false;
+            setActiveCapabilityIds(defaultCapabilityIds);
+            setActiveModelId(preferredModelId);
         }
-    }, [sessionId, initialMessage]);
+    }, [sessionId, initialMessage, defaultCapabilityIds, preferredModelId]);
 
-    const persistConversation = useCallback((allMessages, finalContent) => {
+    const persistConversation = useCallback((allMessages, finalContent, meta) => {
         try {
             const updatedComplete = [...allMessages, { role: 'ai', content: finalContent, time: new Date() }];
             const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
@@ -51,6 +75,7 @@ export default function ChatArea({ initialMessage, sessionId }) {
                 title: firstUserMessage.substring(0, 15) + (firstUserMessage.length > 15 ? '...' : ''),
                 date: new Date().toLocaleDateString(),
                 messages: updatedComplete,
+                meta,
             };
 
             if (existingIdx >= 0) {
@@ -90,7 +115,11 @@ export default function ChatArea({ initialMessage, sessionId }) {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: apiMessages }),
+                body: JSON.stringify({
+                    messages: apiMessages,
+                    model: activeModelId,
+                    capabilityIds: activeCapabilityIds,
+                }),
                 signal: abortControllerRef.current.signal,
             });
 
@@ -157,7 +186,10 @@ export default function ChatArea({ initialMessage, sessionId }) {
                 return updated;
             });
 
-            const persistedSessionId = persistConversation(allMessages, finalContent);
+            const persistedSessionId = persistConversation(allMessages, finalContent, {
+                capabilityIds: activeCapabilityIds,
+                modelId: activeModelId,
+            });
 
             // Extract tasks asynchronously
             try {
@@ -196,7 +228,7 @@ export default function ChatArea({ initialMessage, sessionId }) {
         } finally {
             setIsTyping(false);
         }
-    }, [persistConversation]);
+    }, [persistConversation, activeCapabilityIds, activeModelId]);
 
     // Handle initial message from landing page
     useEffect(() => {
@@ -230,12 +262,19 @@ export default function ChatArea({ initialMessage, sessionId }) {
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const handleModelChange = (e) => {
+        const nextModelId = e.target.value;
+        setActiveModelId(nextModelId);
+        onPreferredModelChange?.(nextModelId);
+    };
+
     const firstUserMessage = messages.find((message) => message.role === 'user')?.content || initialMessage || '新的校园任务';
     const workspaceTitle = firstUserMessage.length > 40 ? `${firstUserMessage.slice(0, 40)}...` : firstUserMessage;
+    const activeCapabilities = activeCapabilityIds.map((id) => capabilityMap[id]).filter(Boolean);
+    const activeModel = chatModelMap[activeModelId] || chatModelMap[preferredModelId] || chatModelOptions[0];
     const workspaceBadges = [
         sessionId ? '历史会话' : '当前工作区',
-        '校园任务追踪',
-        'Campus OS',
+        activeModel?.label || '默认模型',
     ];
 
     return (
@@ -249,6 +288,14 @@ export default function ChatArea({ initialMessage, sessionId }) {
                             <p className="chat-workspace-desc">
                                 围绕当前问题持续组织校园上下文，让对话、任务与后续动作都留在同一个工作面板里。
                             </p>
+                            <div className="chat-capability-strip">
+                                <span className="chat-strip-label">当前接入</span>
+                                <div className="chat-strip-list">
+                                    {activeCapabilities.map((capability) => (
+                                        <span key={capability.id} className="chat-strip-pill">{capability.name}</span>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                         <div className="chat-workspace-tags">
                             {workspaceBadges.map((badge) => (
@@ -301,6 +348,32 @@ export default function ChatArea({ initialMessage, sessionId }) {
 
             <div className="chat-input-area">
                 <div className="chat-container-inner">
+                    <div className="chat-toolbar">
+                        <div className="chat-toolbar-capabilities">
+                            <span className="chat-toolbar-label">接入能力</span>
+                            <div className="chat-toolbar-pills">
+                                {activeCapabilities.map((capability) => (
+                                    <span key={`toolbar-${capability.id}`} className="chat-toolbar-pill">
+                                        {capability.name}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <label className="chat-model-picker">
+                            <span className="chat-toolbar-label">主对话模型</span>
+                            <select
+                                className="chat-model-select"
+                                value={activeModelId}
+                                onChange={handleModelChange}
+                            >
+                                {chatModelOptions.map((model) => (
+                                    <option key={model.id} value={model.id}>
+                                        {model.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
                     <div className="chat-input-box glass-strong">
                         <textarea
                             className="chat-textarea"

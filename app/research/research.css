@@ -138,6 +138,68 @@
     overflow: hidden;
 }
 
+.research-shell-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 16;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 18px;
+}
+
+.research-shell-copy {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.research-shell-copy strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.research-shell-kicker {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.research-shell-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.research-shell-btn {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.research-shell-btn.primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
 .research-loading-overlay {
     position: absolute;
     inset: 0;
@@ -181,4 +243,13 @@
     border: none;
     display: block;
     background: transparent;
+}
+
+@media (max-width: 960px) {
+    .research-shell-toolbar,
+    .research-shell-copy,
+    .research-shell-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

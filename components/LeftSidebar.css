@@ -291,6 +291,7 @@
     border-radius: var(--radius-sm);
     background: rgba(0, 0, 0, 0.02);
     border: 1px solid var(--border-light);
+    overflow: hidden;
 }
 
 .ls-calendar-nav {
@@ -319,17 +320,19 @@
 
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(14, 14px);
-    gap: 4px;
-    justify-content: center;
+    grid-template-columns: repeat(14, minmax(0, 1fr));
+    gap: 3px;
+    width: 100%;
 }
 
 .heat-cell {
-    width: 14px;
-    height: 14px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
     border-radius: 2px;
     transition: transform 0.1s ease;
     background: rgba(0, 0, 0, 0.04);
+    min-width: 0;
 }
 
 .heat-cell.empty {

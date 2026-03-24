@@ -12,7 +12,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [editingTitle, setEditingTitle] = useState('');
     const [pageOffset, setPageOffset] = useState(0);
-    const [isMounted, setIsMounted] = useState(false);
+    const [calendarAnchor, setCalendarAnchor] = useState(null);
 
     const handleDeleteTask = (taskId) => {
         const newTasks = tasks.filter(t => t.id !== taskId);
@@ -28,18 +28,18 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     };
 
     useEffect(() => {
-        setIsMounted(true);
         const loadData = () => {
             try {
-                const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks'));
-                if (storedTasks && storedTasks.length > 0) setTasks(storedTasks);
+                const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
+                setTasks(Array.isArray(storedTasks) ? storedTasks : []);
                 
-                const storedChats = JSON.parse(localStorage.getItem('chat_sessions'));
-                if (storedChats && storedChats.length > 0) setChats(storedChats);
+                const storedChats = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+                setChats(Array.isArray(storedChats) ? storedChats : []);
             } catch(e) {}
         };
         
         loadData();
+        setCalendarAnchor(new Date());
 
         window.addEventListener('tasks-updated', loadData);
         window.addEventListener('chat-history-updated', loadData);
@@ -49,10 +49,12 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
         };
     }, []);
 
-    const [calendarProps, setCalendarProps] = useState({ calendar: [], startDate: new Date('2024-01-01'), endDate: new Date('2024-01-01') });
+    const [calendarProps, setCalendarProps] = useState({ calendar: [], startDate: null, endDate: null });
 
     useEffect(() => {
-        const today = isMounted ? new Date() : new Date('2024-01-01');
+        if (!calendarAnchor) return;
+
+        const today = calendarAnchor;
         const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (pageOffset * 42));
         const startDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() - 41);
         
@@ -89,7 +91,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
             calendar.push({ type: 'day', id: i, formattedDate, level, dStr, cCount, tCount });
         }
         setCalendarProps({ calendar, startDate, endDate });
-    }, [isMounted, pageOffset, chats, tasks]);
+    }, [calendarAnchor, pageOffset, chats, tasks]);
 
     const { calendar: calendarData, startDate, endDate } = calendarProps;
     const handlePrevPage = () => setPageOffset(prev => prev - 1);
@@ -120,7 +122,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                 </button>
             </div>
 
-            <div className="ls-scroll" style={{ opacity: isMounted ? 1 : 0, transition: 'opacity 0.2s var(--ease-out)' }}>
+            <div className="ls-scroll">
                 {/* 1. 任务进度看板 */}
                 <div className="ls-section">
                     <div className="ls-sec-title-area">
@@ -208,7 +210,11 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                         </div>
                         <div className="ls-calendar-nav">
                             <button onClick={handlePrevPage}>&lt;</button>
-                            <span>{startDate.getMonth() + 1}/{startDate.getDate()} - {endDate.getMonth() + 1}/{endDate.getDate()}</span>
+                            <span>
+                                {startDate && endDate
+                                    ? `${startDate.getMonth() + 1}/${startDate.getDate()} - ${endDate.getMonth() + 1}/${endDate.getDate()}`
+                                    : '正在加载'}
+                            </span>
                             <button onClick={handleNextPage}>&gt;</button>
                         </div>
                     </div>
