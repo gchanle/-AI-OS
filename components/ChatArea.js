@@ -2,8 +2,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
     capabilityMap,
-    chatModelMap,
     chatModelOptions,
+    resolveChatModel,
 } from '@/data/workspace';
 import './ChatArea.css';
 
@@ -19,7 +19,9 @@ export default function ChatArea({
     const [isTyping, setIsTyping] = useState(false);
     const [activeCapabilityIds, setActiveCapabilityIds] = useState(defaultCapabilityIds);
     const [activeModelId, setActiveModelId] = useState(preferredModelId);
+    const [availableModels, setAvailableModels] = useState(chatModelOptions);
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
     const hasInitialized = useRef(false);
     const abortControllerRef = useRef(null);
 
@@ -35,6 +37,26 @@ export default function ChatArea({
             setActiveModelId(preferredModelId);
         }
     }, [sessionId, defaultCapabilityIds, preferredModelId]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        fetch('/api/models')
+            .then((res) => res.json())
+            .then((data) => {
+                if (!mounted || !data.models?.length) return;
+                setAvailableModels(data.models);
+            })
+            .catch(() => {
+                if (mounted) {
+                    setAvailableModels(chatModelOptions);
+                }
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Update messages when sessionId changes
     useEffect(() => {
@@ -74,6 +96,7 @@ export default function ChatArea({
                 id: sid,
                 title: firstUserMessage.substring(0, 15) + (firstUserMessage.length > 15 ? '...' : ''),
                 date: new Date().toLocaleDateString(),
+                updatedAt: new Date().toISOString(),
                 messages: updatedComplete,
                 meta,
             };
@@ -204,7 +227,13 @@ export default function ChatArea({
                 }).then(res => res.json()).then(data => {
                     if (data.tasks && data.tasks.length > 0) {
                         const existingTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
-                        const newTasks = [...data.tasks, ...existingTasks];
+                        const newTasks = [
+                            ...data.tasks.map((task) => ({
+                                ...task,
+                                createdAt: task.createdAt || new Date().toISOString(),
+                            })),
+                            ...existingTasks,
+                        ];
                         localStorage.setItem('dynamic_tasks', JSON.stringify(newTasks));
                         window.dispatchEvent(new CustomEvent('tasks-updated', { detail: data.tasks }));
                     }
@@ -271,7 +300,7 @@ export default function ChatArea({
     const firstUserMessage = messages.find((message) => message.role === 'user')?.content || initialMessage || '新的校园任务';
     const workspaceTitle = firstUserMessage.length > 40 ? `${firstUserMessage.slice(0, 40)}...` : firstUserMessage;
     const activeCapabilities = activeCapabilityIds.map((id) => capabilityMap[id]).filter(Boolean);
-    const activeModel = chatModelMap[activeModelId] || chatModelMap[preferredModelId] || chatModelOptions[0];
+    const activeModel = resolveChatModel(activeModelId || preferredModelId);
     const workspaceBadges = [
         sessionId ? '历史会话' : '当前工作区',
         activeModel?.label || '默认模型',
@@ -298,6 +327,20 @@ export default function ChatArea({
                             </div>
                         </div>
                         <div className="chat-workspace-tags">
+                            <label className="chat-head-model-picker">
+                                <span className="chat-head-model-label">主对话模型</span>
+                                <select
+                                    className="chat-head-model-select"
+                                    value={activeModelId}
+                                    onChange={handleModelChange}
+                                >
+                                    {availableModels.map((model) => (
+                                        <option key={model.id} value={model.id}>
+                                            {model.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
                             {workspaceBadges.map((badge) => (
                                 <span key={badge} className="chat-workspace-tag">{badge}</span>
                             ))}
@@ -359,23 +402,13 @@ export default function ChatArea({
                                 ))}
                             </div>
                         </div>
-                        <label className="chat-model-picker">
-                            <span className="chat-toolbar-label">主对话模型</span>
-                            <select
-                                className="chat-model-select"
-                                value={activeModelId}
-                                onChange={handleModelChange}
-                            >
-                                {chatModelOptions.map((model) => (
-                                    <option key={model.id} value={model.id}>
-                                        {model.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
                     </div>
-                    <div className="chat-input-box glass-strong">
+                    <div
+                        className="chat-input-box glass-strong"
+                        onClick={() => textareaRef.current?.focus()}
+                    >
                         <textarea
+                            ref={textareaRef}
                             className="chat-textarea"
                             placeholder="继续推进当前校园任务，或补充新的上下文..."
                             value={inputValue}

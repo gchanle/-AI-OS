@@ -31,6 +31,12 @@
     justify-content: space-between;
 }
 
+.assistant-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .assistant-sidebar.collapsed .as-header {
     padding: 24px 0 16px;
     justify-content: center;
@@ -138,66 +144,30 @@
     overflow: hidden;
 }
 
-.assistant-shell-toolbar {
+.assistant-open-hint {
     position: absolute;
-    top: 16px;
-    left: 16px;
+    top: 14px;
     right: 16px;
-    z-index: 16;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 16px;
-    border-radius: 18px;
-}
-
-.assistant-shell-copy {
+    z-index: 14;
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 12px;
 }
 
-.assistant-shell-copy strong {
-    color: var(--text-primary);
-    font-size: 14px;
-}
-
-.assistant-shell-kicker {
-    color: var(--text-tertiary);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    flex-shrink: 0;
-}
-
-.assistant-shell-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.assistant-shell-btn {
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 10px;
+.assistant-open-hint button {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 8px;
     border: 1px solid var(--border-light);
     background: rgba(255, 255, 255, 0.78);
     color: var(--text-secondary);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-}
-
-.assistant-shell-btn.primary {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
 }
 
 .assistant-loading-overlay {
@@ -245,10 +215,9 @@
 }
 
 @media (max-width: 960px) {
-    .assistant-shell-toolbar,
-    .assistant-shell-copy,
-    .assistant-shell-actions {
-        flex-direction: column;
+    .assistant-open-hint {
+        left: 16px;
+        right: 16px;
         align-items: flex-start;
     }
 }

@@ -52,9 +52,14 @@ export default function RightSidebar() {
     const [activeTab, setActiveTab] = useState('todo');
     const [collapsed, setCollapsed] = useState(false);
     const [liveData, setLiveData] = useState({ weibo: [], news: [] });
+    const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         let mounted = true;
+        const readyTimer = window.setTimeout(() => {
+            if (mounted) setIsReady(true);
+        }, 220);
+
         const fetchNews = async () => {
             try {
                 const res = await fetch('/api/news');
@@ -70,7 +75,11 @@ export default function RightSidebar() {
         };
         fetchNews();
         const timer = setInterval(fetchNews, 300000);
-        return () => { mounted = false; clearInterval(timer); };
+        return () => {
+            mounted = false;
+            clearInterval(timer);
+            window.clearTimeout(readyTimer);
+        };
     }, []);
 
     const tabs = [
@@ -130,6 +139,22 @@ export default function RightSidebar() {
             </div>
 
             <div className="rs-body">
+                {!isReady ? (
+                    <div className="rs-skeleton-stack">
+                        <div className="rs-skeleton-section">
+                            <div className="skeleton-box rs-skeleton-title"></div>
+                            <div className="skeleton-box rs-skeleton-card"></div>
+                            <div className="skeleton-box rs-skeleton-card"></div>
+                        </div>
+                        <div className="rs-skeleton-section">
+                            <div className="skeleton-box rs-skeleton-title"></div>
+                            <div className="skeleton-box rs-skeleton-row"></div>
+                            <div className="skeleton-box rs-skeleton-row"></div>
+                            <div className="skeleton-box rs-skeleton-row short"></div>
+                        </div>
+                    </div>
+                ) : (
+                    <>
                 {/* INFO TAB */}
                 {activeTab === 'info' && (
                     <div className="rs-tab-content">
@@ -287,6 +312,8 @@ export default function RightSidebar() {
                             </div>
                         </div>
                     </div>
+                )}
+                    </>
                 )}
             </div>
         </aside>

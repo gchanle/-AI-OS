@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { workflowActions } from '@/data/mock';
 import './LandingView.css';
 
@@ -13,6 +13,7 @@ const capabilityIcons = {
 
 export default function LandingView({ onStartChat, capabilities, selectedCapabilityIds, onToggleCapability }) {
     const [inputValue, setInputValue] = useState('');
+    const textareaRef = useRef(null);
 
     const handleSend = (text) => {
         const message = text || inputValue.trim();
@@ -112,8 +113,13 @@ export default function LandingView({ onStartChat, capabilities, selectedCapabil
                             <div className="search-box-status">{selectedCapabilities.length} 个能力已接入</div>
                         </div>
 
-                        <div className="search-input-area" style={{ flex: 1 }}>
+                        <div
+                            className="search-input-area"
+                            style={{ flex: 1 }}
+                            onClick={() => textareaRef.current?.focus()}
+                        >
                             <textarea
+                                ref={textareaRef}
                                 className="search-textarea"
                                 placeholder="例如：帮我把本周课程、待办和截止时间整理成一个学习推进计划"
                                 value={inputValue}

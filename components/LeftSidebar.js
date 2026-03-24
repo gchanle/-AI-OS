@@ -7,12 +7,14 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     const [activeChat, setActiveChat] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [chats, setChats] = useState([]);
+    const [isReady, setIsReady] = useState(false);
     const [isManageMode, setIsManageMode] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState(null);
     const [editingTitle, setEditingTitle] = useState('');
     const [pageOffset, setPageOffset] = useState(0);
     const [calendarAnchor, setCalendarAnchor] = useState(null);
+    const [hoveredCell, setHoveredCell] = useState(null);
 
     const handleDeleteTask = (taskId) => {
         const newTasks = tasks.filter(t => t.id !== taskId);
@@ -28,13 +30,34 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     };
 
     useEffect(() => {
+        let readyTimer;
+
         const loadData = () => {
             try {
-                const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
-                setTasks(Array.isArray(storedTasks) ? storedTasks : []);
-                
                 const storedChats = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
-                setChats(Array.isArray(storedChats) ? storedChats : []);
+                const normalizedChats = Array.isArray(storedChats)
+                    ? storedChats.map((chat) => ({
+                        ...chat,
+                        updatedAt: chat.updatedAt || chat.time || chat.date || new Date().toISOString(),
+                    }))
+                    : [];
+
+                const sessionTimeMap = Object.fromEntries(
+                    normalizedChats.map((chat) => [chat.id, chat.updatedAt])
+                );
+
+                const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
+                const normalizedTasks = Array.isArray(storedTasks)
+                    ? storedTasks.map((task) => ({
+                        ...task,
+                        createdAt: task.createdAt || sessionTimeMap[task.sessionId] || new Date().toISOString(),
+                    }))
+                    : [];
+
+                setTasks(normalizedTasks);
+                setChats(normalizedChats);
+                window.clearTimeout(readyTimer);
+                readyTimer = window.setTimeout(() => setIsReady(true), 220);
             } catch(e) {}
         };
         
@@ -44,6 +67,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
         window.addEventListener('tasks-updated', loadData);
         window.addEventListener('chat-history-updated', loadData);
         return () => {
+            window.clearTimeout(readyTimer);
             window.removeEventListener('tasks-updated', loadData);
             window.removeEventListener('chat-history-updated', loadData);
         };
@@ -61,7 +85,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
         const chatMap = {};
         const taskMap = {};
         chats.forEach(c => {
-            const d = new Date(c.time || c.date || new Date());
+            const d = new Date(c.updatedAt || c.time || c.date || new Date());
             if (!isNaN(d)) {
                 const key = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
                 chatMap[key] = (chatMap[key] || 0) + 1;
@@ -96,6 +120,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     const { calendar: calendarData, startDate, endDate } = calendarProps;
     const handlePrevPage = () => setPageOffset(prev => prev - 1);
     const handleNextPage = () => setPageOffset(prev => prev + 1);
+    const activeHoverCell = hoveredCell || calendarData.find((cell) => cell.level > 0) || calendarData[calendarData.length - 1];
 
     if (collapsed) {
         return (
@@ -123,6 +148,27 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
             </div>
 
             <div className="ls-scroll">
+                {!isReady ? (
+                    <div className="ls-skeleton-stack">
+                        <div className="ls-skeleton-section">
+                            <div className="skeleton-box ls-skeleton-title"></div>
+                            <div className="skeleton-box ls-skeleton-card"></div>
+                            <div className="skeleton-box ls-skeleton-card"></div>
+                        </div>
+                        <div className="ls-skeleton-section">
+                            <div className="skeleton-box ls-skeleton-title"></div>
+                            <div className="skeleton-box ls-skeleton-heatmap"></div>
+                            <div className="skeleton-box ls-skeleton-meta"></div>
+                        </div>
+                        <div className="ls-skeleton-section">
+                            <div className="skeleton-box ls-skeleton-title"></div>
+                            <div className="skeleton-box ls-skeleton-row"></div>
+                            <div className="skeleton-box ls-skeleton-row"></div>
+                            <div className="skeleton-box ls-skeleton-row short"></div>
+                        </div>
+                    </div>
+                ) : (
+                    <>
                 {/* 1. 任务进度看板 */}
                 <div className="ls-section">
                     <div className="ls-sec-title-area">
@@ -224,10 +270,18 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                                 <div 
                                     key={cell.id} 
                                     className={`heat-cell heat-${cell.level}`} 
-                                    title={`${cell.formattedDate}\n会话: ${cell.cCount} | 任务: ${cell.tCount}`}
+                                    onMouseEnter={() => setHoveredCell(cell)}
+                                    onMouseLeave={() => setHoveredCell(null)}
                                 ></div>
                             ))}
                         </div>
+                        {activeHoverCell && (
+                            <div className="ls-heatmap-meta">
+                                <strong>{activeHoverCell.formattedDate}</strong>
+                                <span>{activeHoverCell.cCount} 条对话</span>
+                                <span>{activeHoverCell.tCount} 个任务</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -253,6 +307,8 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
                             ))}
                         </div>
                     </div>
+                    </>
+                )}
             </div>
 
             <TasksModal 

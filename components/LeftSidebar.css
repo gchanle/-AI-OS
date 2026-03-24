@@ -108,6 +108,44 @@
     gap: 20px;
 }
 
+.ls-skeleton-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.ls-skeleton-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ls-skeleton-title {
+    width: 84px;
+    height: 12px;
+}
+
+.ls-skeleton-card {
+    height: 58px;
+}
+
+.ls-skeleton-heatmap {
+    height: 92px;
+}
+
+.ls-skeleton-meta {
+    width: 140px;
+    height: 12px;
+}
+
+.ls-skeleton-row {
+    height: 38px;
+}
+
+.ls-skeleton-row.short {
+    width: 72%;
+}
+
 /* Sections */
 .ls-section {
     flex-shrink: 0;
@@ -363,6 +401,21 @@
 
 .heat-4 {
     background: rgba(52, 199, 89, 1);
+}
+
+.ls-heatmap-meta {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.ls-heatmap-meta strong {
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 /* History */

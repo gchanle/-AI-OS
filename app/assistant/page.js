@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import ExternalOpenModeControl from '@/components/ExternalOpenModeControl';
 import './assistant.css';
 
 const assistantNavItems = [
@@ -11,19 +12,43 @@ export default function AssistantPage() {
     const [activeTab, setActiveTab] = useState(assistantNavItems[0]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [openMode, setOpenMode] = useState('embed');
+    const [showOpenHint, setShowOpenHint] = useState(false);
+
+    useEffect(() => {
+        const storedMode = localStorage.getItem('external_open_mode');
+        const tipSeen = localStorage.getItem('external_open_mode_tip_seen');
+
+        if (storedMode) {
+            setOpenMode(storedMode);
+        }
+        if (!tipSeen) {
+            setShowOpenHint(true);
+        }
+    }, []);
+
+    const persistMode = (mode) => {
+        setOpenMode(mode);
+        localStorage.setItem('external_open_mode', mode);
+    };
+
+    const dismissOpenHint = () => {
+        setShowOpenHint(false);
+        localStorage.setItem('external_open_mode_tip_seen', '1');
+    };
 
     const handleTabSwitch = (tab) => {
+        if (openMode === 'current') {
+            window.location.href = tab.url;
+            return;
+        }
+        if (openMode === 'new-tab') {
+            window.open(tab.url, '_blank', 'noopener,noreferrer');
+            return;
+        }
         if (tab.id === activeTab.id) return;
         setIsLoading(true);
         setActiveTab(tab);
-    };
-
-    const openInCurrentWindow = () => {
-        window.location.href = activeTab.url;
-    };
-
-    const openInNewTab = () => {
-        window.open(activeTab.url, '_blank', 'noopener,noreferrer');
     };
 
     return (
@@ -33,13 +58,21 @@ export default function AssistantPage() {
             <div className={`assistant-sidebar glass-strong ${isSidebarCollapsed ? 'collapsed' : ''}`}>
                 <div className="as-header">
                     {!isSidebarCollapsed && <h2><span className="ai-accent">AI</span> 助教中心</h2>}
-                    <button 
-                        className="as-toggle-btn" 
-                        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-                        title={isSidebarCollapsed ? "展开边栏" : "收起边栏"}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    </button>
+                    <div className="assistant-header-actions">
+                        {!isSidebarCollapsed && (
+                            <ExternalOpenModeControl
+                                value={openMode}
+                                onChange={persistMode}
+                            />
+                        )}
+                        <button 
+                            className="as-toggle-btn" 
+                            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+                            title={isSidebarCollapsed ? "展开边栏" : "收起边栏"}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div className="as-nav-list">
                     {assistantNavItems.map(item => (
@@ -58,17 +91,12 @@ export default function AssistantPage() {
 
             {/* 右侧主内容区 */}
             <div className="assistant-content">
-                <div className="assistant-shell-toolbar glass-strong">
-                    <div className="assistant-shell-copy">
-                        <span className="assistant-shell-kicker">外部系统接入</span>
-                        <strong>{activeTab.label}</strong>
-                        <span>如果登录动作被外部系统拦截，请改用当前窗口接管或新标签打开。</span>
+                {showOpenHint && (
+                    <div className="assistant-open-hint glass-strong">
+                        <span>外部系统打开方式可在左侧顶部切换，当前为“{openMode === 'embed' ? '嵌入查看' : openMode === 'current' ? '当前窗口' : '新标签'}”。</span>
+                        <button type="button" onClick={dismissOpenHint}>知道了</button>
                     </div>
-                    <div className="assistant-shell-actions">
-                        <button className="assistant-shell-btn primary" onClick={openInCurrentWindow}>当前窗口打开</button>
-                        <button className="assistant-shell-btn" onClick={openInNewTab}>新标签打开</button>
-                    </div>
-                </div>
+                )}
                 {isLoading && (
                     <div className="assistant-loading-overlay">
                         <div className="spinner"></div>

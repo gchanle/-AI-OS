@@ -1,0 +1,73 @@
+.external-mode-control {
+    position: relative;
+}
+
+.external-mode-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.external-mode-button:hover {
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+}
+
+.external-mode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+}
+
+.external-mode-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 132px;
+    padding: 6px;
+    border-radius: 14px;
+    z-index: 41;
+    box-shadow: var(--shadow-lg);
+}
+
+.external-mode-title {
+    padding: 6px 8px 8px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.external-mode-item {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.external-mode-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-primary);
+}
+
+.external-mode-item.active {
+    background: var(--primary-lighter);
+    color: var(--primary);
+}

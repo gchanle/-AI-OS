@@ -50,6 +50,19 @@ export const chatModelOptions = [
   },
 ];
 
+export const chatModelCandidates = [
+  { id: 'kimi-k2.5', label: 'KIMI 2.5', summary: '主对话默认' },
+  { id: 'qwen3-coder-plus', label: 'Qwen3 Coder Plus', summary: '代码与规划' },
+  { id: 'qwen-plus', label: 'Qwen Plus', summary: '通用增强' },
+  { id: 'qwen-plus-latest', label: 'Qwen Plus Latest', summary: '通用增强' },
+  { id: 'qwen-max', label: 'Qwen Max', summary: '复杂推理' },
+  { id: 'qwen-max-latest', label: 'Qwen Max Latest', summary: '复杂推理' },
+  { id: 'qwen-flash', label: 'Qwen Flash', summary: '快速响应' },
+  { id: 'qwen3-max', label: 'Qwen3 Max', summary: '高阶推理' },
+  { id: 'deepseek-r1', label: 'DeepSeek R1', summary: '深度思考' },
+  { id: 'deepseek-v3', label: 'DeepSeek V3', summary: '通用推理' },
+];
+
 export const defaultChatModelId = 'kimi-k2.5';
 
 export const chatModelMap = Object.fromEntries(
@@ -57,7 +70,24 @@ export const chatModelMap = Object.fromEntries(
 );
 
 export function resolveChatModel(modelId) {
-  return chatModelMap[modelId] || chatModelMap[defaultChatModelId];
+  if (chatModelMap[modelId]) {
+    return chatModelMap[modelId];
+  }
+
+  if (modelId) {
+    const fallbackCandidate = chatModelCandidates.find((item) => item.id === modelId);
+    if (fallbackCandidate) {
+      return fallbackCandidate;
+    }
+
+    return {
+      id: modelId,
+      label: modelId,
+      summary: '自定义模型',
+    };
+  }
+
+  return chatModelMap[defaultChatModelId];
 }
 
 export function sortCapabilityIds(ids = []) {
@@ -88,3 +118,9 @@ export function buildCapabilitySystemNote(capabilityIds = []) {
     '如果没有拿到真实系统返回，就不要编造具体办事结果、课程数据或检索结果。',
   ].join('\n');
 }
+
+export const externalOpenModes = [
+  { id: 'embed', label: '嵌入查看' },
+  { id: 'current', label: '当前窗口' },
+  { id: 'new-tab', label: '新标签' },
+];

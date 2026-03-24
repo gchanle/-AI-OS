@@ -140,6 +140,35 @@
     padding: 12px 16px 16px;
 }
 
+.rs-skeleton-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.rs-skeleton-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rs-skeleton-title {
+    width: 92px;
+    height: 12px;
+}
+
+.rs-skeleton-card {
+    height: 66px;
+}
+
+.rs-skeleton-row {
+    height: 42px;
+}
+
+.rs-skeleton-row.short {
+    width: 76%;
+}
+
 .rs-tab-content {
     animation: fadeIn 0.2s ease-out;
 }
