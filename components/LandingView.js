@@ -11,9 +11,21 @@ const capabilityIcons = {
     agents: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" /></svg>,
 };
 
-export default function LandingView({ onStartChat, capabilities, selectedCapabilityIds, onToggleCapability }) {
+export default function LandingView({
+    onStartChat,
+    capabilities,
+    selectedCapabilityIds,
+    onToggleCapability,
+    availableModels,
+    preferredModelId,
+    onPreferredModelChange,
+    variant = 'classic',
+}) {
     const [inputValue, setInputValue] = useState('');
+    const [showSkillMenu, setShowSkillMenu] = useState(false);
+    const [isListening, setIsListening] = useState(false);
     const textareaRef = useRef(null);
+    const speechRecognitionRef = useRef(null);
 
     const handleSend = (text) => {
         const message = text || inputValue.trim();
@@ -32,6 +44,176 @@ export default function LandingView({ onStartChat, capabilities, selectedCapabil
     const selectedCapabilities = capabilities.filter((item) => selectedCapabilityIds.includes(item.id));
     const mainCapability = selectedCapabilities.length > 0 ? selectedCapabilities[0] : capabilities[0];
     const activeCapabilityNames = selectedCapabilities.map((item) => item.name).join(' · ');
+    const isMinimal = variant === 'minimal';
+
+    const handleQuickSkill = (action) => {
+        setInputValue(action);
+        setShowSkillMenu(false);
+        textareaRef.current?.focus();
+    };
+
+    const handleVoiceInput = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            return;
+        }
+
+        if (speechRecognitionRef.current) {
+            speechRecognitionRef.current.stop();
+            speechRecognitionRef.current = null;
+            setIsListening(false);
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'zh-CN';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+            const transcript = event.results?.[0]?.[0]?.transcript;
+            if (transcript) {
+                setInputValue((prev) => `${prev}${prev ? '\n' : ''}${transcript}`);
+            }
+        };
+
+        recognition.onend = () => {
+            speechRecognitionRef.current = null;
+            setIsListening(false);
+        };
+
+        recognition.onerror = () => {
+            speechRecognitionRef.current = null;
+            setIsListening(false);
+        };
+
+        speechRecognitionRef.current = recognition;
+        setIsListening(true);
+        recognition.start();
+    };
+
+    if (isMinimal) {
+        return (
+            <div className="landing landing-minimal">
+                <div className="landing-minimal-shell glass-strong">
+                    <div className="landing-minimal-head">
+                        <div className="landing-minimal-brand">
+                            <span className="landing-brand-text">萤火虫</span>
+                        </div>
+                    </div>
+
+                    <div className="landing-minimal-copy">
+                        <h1>你想让萤火虫先处理什么？</h1>
+                        <p>只保留任务输入、模型切换和后续操作空间，让界面更克制地推进事情。</p>
+                    </div>
+
+                    <div className="chat-composer-minimal landing-composer-minimal glass">
+                        <div className="chat-composer-status">
+                            输入一句任务，萤火虫会继续拆解、推进，并把后续的非对话结果放进右侧操作空间。
+                        </div>
+                        <div
+                            className="chat-input-box chat-input-box-minimal"
+                            onClick={() => textareaRef.current?.focus()}
+                        >
+                            <textarea
+                                ref={textareaRef}
+                                className="chat-textarea chat-textarea-minimal"
+                                placeholder=""
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                rows={4}
+                            />
+                        </div>
+                        <div className="chat-composer-footer">
+                            <div className="chat-composer-tools">
+                                <button className="chat-tool-btn" type="button" title="添加附件">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                                </button>
+                                <label className="chat-composer-select">
+                                    <span>模型</span>
+                                    <select
+                                        value={preferredModelId}
+                                        onChange={(event) => onPreferredModelChange?.(event.target.value)}
+                                    >
+                                        {availableModels.map((model) => (
+                                            <option key={model.id} value={model.id}>
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <button
+                                    className={`chat-tool-btn ${isListening ? 'active' : ''}`}
+                                    type="button"
+                                    title="语音输入"
+                                    onClick={handleVoiceInput}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                </button>
+                                <div className="chat-menu-wrap">
+                                    <button className="chat-tool-chip" type="button" onClick={() => setShowSkillMenu((prev) => !prev)}>
+                                        技能
+                                    </button>
+                                    {showSkillMenu && (
+                                        <div className="chat-floating-menu glass-strong">
+                                            {workflowActions.map((action) => (
+                                                <button key={action.id} type="button" className="chat-floating-item" onClick={() => handleQuickSkill(action.action)}>
+                                                    <strong>{action.title}</strong>
+                                                    <span>{action.desc}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="chat-menu-wrap">
+                                    <button className="chat-tool-chip" type="button" onClick={() => setShowAgentMenu((prev) => !prev)}>
+                                        能力
+                                    </button>
+                                    {showAgentMenu && (
+                                        <div className="chat-floating-menu glass-strong">
+                                            {capabilities.map((capability) => (
+                                                <button
+                                                    key={capability.id}
+                                                    type="button"
+                                                    className={`chat-floating-item ${selectedCapabilityIds.includes(capability.id) ? 'active' : ''}`}
+                                                    onClick={() => onToggleCapability(capability.id)}
+                                                >
+                                                    <strong>{capability.name}</strong>
+                                                    <span>{capability.source}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                className={`send-btn ${inputValue.trim() ? 'active' : ''}`}
+                                onClick={() => handleSend()}
+                                disabled={!inputValue.trim()}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="landing-minimal-footnote">
+                        <span>当前接入</span>
+                        <strong>{activeCapabilityNames || '尚未接入校园能力'}</strong>
+                    </div>
+                </div>
+
+                {showAgentMenu && (
+                    <div
+                        className="agent-menu-overlay"
+                        onClick={() => setShowAgentMenu(false)}
+                    />
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="landing">
@@ -41,42 +223,59 @@ export default function LandingView({ onStartChat, capabilities, selectedCapabil
                         <span className="landing-brand-badge">萤火虫</span>
                         <span className="landing-brand-text">超星 AI 校园 OS</span>
                     </div>
-                    <div className="agent-selector-wrapper">
-                        <button
-                            className="current-agent-btn glass"
-                            onClick={() => setShowAgentMenu(!showAgentMenu)}
-                            title="接入能力配置"
-                        >
-                            <span className="agent-btn-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                            </span>
-                            <span className="agent-btn-copy">
-                                <span className="agent-btn-name">{mainCapability.name}</span>
-                                <span className="agent-btn-meta">{selectedCapabilities.length} 个能力已接入</span>
-                            </span>
-                            <svg className={`chevron ${showAgentMenu ? 'up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </button>
+                    <div className="landing-controls">
+                        <label className="landing-model-picker glass" title="主对话模型">
+                            <span className="landing-model-label">主对话模型</span>
+                            <select
+                                className="landing-model-select"
+                                value={preferredModelId}
+                                onChange={(event) => onPreferredModelChange?.(event.target.value)}
+                            >
+                                {availableModels.map((model) => (
+                                    <option key={model.id} value={model.id}>
+                                        {model.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
 
-                        {showAgentMenu && (
-                            <div className="agent-dropdown glass-strong">
-                                <div className="dropdown-header">接入能力配置</div>
-                                <div className="dropdown-list">
-                                    {capabilities.map((capability) => (
-                                        <button
-                                            key={capability.id}
-                                            className={`dropdown-item ${selectedCapabilityIds.includes(capability.id) ? 'active' : ''}`}
-                                            onClick={() => onToggleCapability(capability.id)}
-                                        >
-                                            <span className="di-icon">{capabilityIcons[capability.id]}</span>
-                                            <span className="di-name">{capability.name}</span>
-                                            {selectedCapabilityIds.includes(capability.id) && (
-                                                <svg className="di-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            )}
-                                        </button>
-                                    ))}
+                        <div className="agent-selector-wrapper">
+                            <button
+                                className="current-agent-btn glass"
+                                onClick={() => setShowAgentMenu(!showAgentMenu)}
+                                title="接入能力配置"
+                            >
+                                <span className="agent-btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                </span>
+                                <span className="agent-btn-copy">
+                                    <span className="agent-btn-name">{mainCapability.name}</span>
+                                    <span className="agent-btn-meta">{selectedCapabilities.length} 个能力已接入</span>
+                                </span>
+                                <svg className={`chevron ${showAgentMenu ? 'up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+
+                            {showAgentMenu && (
+                                <div className="agent-dropdown glass-strong">
+                                    <div className="dropdown-header">接入能力配置</div>
+                                    <div className="dropdown-list">
+                                        {capabilities.map((capability) => (
+                                            <button
+                                                key={capability.id}
+                                                className={`dropdown-item ${selectedCapabilityIds.includes(capability.id) ? 'active' : ''}`}
+                                                onClick={() => onToggleCapability(capability.id)}
+                                            >
+                                                <span className="di-icon">{capabilityIcons[capability.id]}</span>
+                                                <span className="di-name">{capability.name}</span>
+                                                {selectedCapabilityIds.includes(capability.id) && (
+                                                    <svg className="di-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 

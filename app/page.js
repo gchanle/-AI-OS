@@ -6,6 +6,7 @@ import ChatArea from '@/components/ChatArea';
 import RightSidebar from '@/components/RightSidebar';
 import {
   campusCapabilities,
+  chatModelOptions,
   defaultCapabilityIds,
   defaultChatModelId,
   sortCapabilityIds,
@@ -13,11 +14,17 @@ import {
 import './home.css';
 
 export default function Home() {
+  const workspaceModes = [
+    { id: 'classic', label: '工作台' },
+    { id: 'minimal', label: '对话' },
+  ];
   const [chatStarted, setChatStarted] = useState(false);
   const [initialMessage, setInitialMessage] = useState('');
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [selectedCapabilityIds, setSelectedCapabilityIds] = useState(defaultCapabilityIds);
   const [preferredModelId, setPreferredModelId] = useState(defaultChatModelId);
+  const [availableModels, setAvailableModels] = useState(chatModelOptions);
+  const [workspaceMode, setWorkspaceMode] = useState('classic');
 
   useEffect(() => {
     try {
@@ -31,6 +38,9 @@ export default function Home() {
       if (parsedPrefs.modelId) {
         setPreferredModelId(parsedPrefs.modelId);
       }
+      if (parsedPrefs.workspaceMode) {
+        setWorkspaceMode(parsedPrefs.workspaceMode);
+      }
     } catch (error) {
       console.error('Failed to restore workspace preferences:', error);
     }
@@ -43,12 +53,36 @@ export default function Home() {
         JSON.stringify({
           capabilityIds: selectedCapabilityIds,
           modelId: preferredModelId,
+          workspaceMode,
         })
       );
     } catch (error) {
       console.error('Failed to persist workspace preferences:', error);
     }
-  }, [selectedCapabilityIds, preferredModelId]);
+  }, [selectedCapabilityIds, preferredModelId, workspaceMode]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch('/api/models')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!mounted || !Array.isArray(data.models) || data.models.length === 0) {
+          return;
+        }
+
+        setAvailableModels(data.models);
+      })
+      .catch(() => {
+        if (mounted) {
+          setAvailableModels(chatModelOptions);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleStartChat = (message) => {
     setInitialMessage(message);
@@ -85,7 +119,7 @@ export default function Home() {
   };
 
   return (
-    <div className={`home-layout ${chatStarted ? 'chat-mode' : 'landing-mode'}`}>
+    <div className={`home-layout ${chatStarted ? 'chat-mode' : 'landing-mode'} workspace-${workspaceMode}`}>
       {/* 全局背景修饰（蓝白色块） */}
       <div className="global-bg">
         <div className="bg-orb bg-orb-1"></div>
@@ -94,9 +128,26 @@ export default function Home() {
       </div>
 
       {/* 侧边栏始终存在 */}
-      <LeftSidebar onNewChat={handleReset} onSelectSession={handleSelectSession} />
+      <LeftSidebar
+        onNewChat={handleReset}
+        onSelectSession={handleSelectSession}
+        variant={workspaceMode}
+        onQuickStart={handleStartChat}
+      />
 
       <div className="main-content">
+        <div className="workspace-mode-switch glass-strong" role="tablist" aria-label="萤火虫界面版本">
+          {workspaceModes.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              className={`workspace-mode-button ${workspaceMode === mode.id ? 'active' : ''}`}
+              onClick={() => setWorkspaceMode(mode.id)}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
         {/* 只在主区域切换 落地页 / 聊天页 */}
         {!chatStarted ? (
           <LandingView
@@ -104,6 +155,10 @@ export default function Home() {
             capabilities={campusCapabilities}
             selectedCapabilityIds={selectedCapabilityIds}
             onToggleCapability={handleToggleCapability}
+            availableModels={availableModels}
+            preferredModelId={preferredModelId}
+            onPreferredModelChange={setPreferredModelId}
+            variant={workspaceMode}
           />
         ) : (
           <ChatArea
@@ -112,11 +167,14 @@ export default function Home() {
             defaultCapabilityIds={selectedCapabilityIds}
             preferredModelId={preferredModelId}
             onPreferredModelChange={setPreferredModelId}
+            availableModels={availableModels}
+            variant={workspaceMode}
+            onToggleCapability={handleToggleCapability}
           />
         )}
       </div>
 
-      <RightSidebar />
+      {workspaceMode === 'classic' && <RightSidebar />}
     </div>
   );
 }

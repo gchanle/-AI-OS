@@ -3,30 +3,35 @@ export const campusCapabilities = [
     id: 'services',
     name: 'AI 办事',
     source: '服务大厅',
+    href: '/services',
     summary: '办理校园事务、审批流程、日程服务与一网通办入口',
   },
   {
     id: 'research',
     name: 'AI 科研',
     source: '闻道',
+    href: '/research',
     summary: '科研探索、学术追踪、AI 研究员与知识服务',
   },
   {
     id: 'assistant',
     name: 'AI 助教',
     source: '超星泛雅',
+    href: '/assistant',
     summary: '课程教学、作业协同、课堂互动与教学支持',
   },
   {
     id: 'library',
     name: 'AI 图书馆',
     source: '超星图书馆',
+    href: '/library',
     summary: '馆藏检索、借阅服务、阅读支持与学习资源入口',
   },
   {
     id: 'agents',
     name: 'AI 智能体',
     source: 'AI 能力中心',
+    href: '/agent-builder',
     summary: '智能体创建、校园能力编排与院系定制 AI 入口',
   },
 ];
@@ -37,36 +42,23 @@ export const capabilityMap = Object.fromEntries(
   campusCapabilities.map((item) => [item.id, item])
 );
 
-export const chatModelOptions = [
-  {
-    id: 'kimi-k2.5',
-    label: 'KIMI 2.5',
-    summary: '主对话默认',
-  },
-  {
-    id: 'qwen3-coder-plus',
-    label: 'Qwen3 Coder Plus',
-    summary: '代码与规划',
-  },
-];
-
 export const chatModelCandidates = [
   { id: 'kimi-k2.5', label: 'KIMI 2.5', summary: '主对话默认' },
+  { id: 'qwen3.5-plus', label: 'Qwen3.5 Plus', summary: '长文与多模态' },
+  { id: 'qwen3-max-2026-01-23', label: 'Qwen3 Max', summary: '复杂任务与推理' },
+  { id: 'qwen3-coder-next', label: 'Qwen3 Coder Next', summary: '编码与修复' },
   { id: 'qwen3-coder-plus', label: 'Qwen3 Coder Plus', summary: '代码与规划' },
-  { id: 'qwen-plus', label: 'Qwen Plus', summary: '通用增强' },
-  { id: 'qwen-plus-latest', label: 'Qwen Plus Latest', summary: '通用增强' },
-  { id: 'qwen-max', label: 'Qwen Max', summary: '复杂推理' },
-  { id: 'qwen-max-latest', label: 'Qwen Max Latest', summary: '复杂推理' },
-  { id: 'qwen-flash', label: 'Qwen Flash', summary: '快速响应' },
-  { id: 'qwen3-max', label: 'Qwen3 Max', summary: '高阶推理' },
-  { id: 'deepseek-r1', label: 'DeepSeek R1', summary: '深度思考' },
-  { id: 'deepseek-v3', label: 'DeepSeek V3', summary: '通用推理' },
+  { id: 'MiniMax-M2.5', label: 'MiniMax M2.5', summary: '超长上下文' },
+  { id: 'glm-5', label: 'GLM-5', summary: '推理与通用问答' },
+  { id: 'glm-4.7', label: 'GLM-4.7', summary: '轻量推理' },
 ];
+
+export const chatModelOptions = chatModelCandidates;
 
 export const defaultChatModelId = 'kimi-k2.5';
 
 export const chatModelMap = Object.fromEntries(
-  chatModelOptions.map((item) => [item.id, item])
+  chatModelCandidates.map((item) => [item.id, item])
 );
 
 export function resolveChatModel(modelId) {

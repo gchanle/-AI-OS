@@ -17,6 +17,14 @@
     cursor: pointer;
 }
 
+.external-mode-button.icon-only {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+}
+
 .external-mode-button:hover {
     color: var(--text-primary);
     border-color: var(--border-medium);
@@ -32,7 +40,7 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 132px;
+    width: 144px;
     padding: 6px;
     border-radius: 14px;
     z-index: 41;

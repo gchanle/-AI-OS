@@ -24,13 +24,55 @@ const navItems = [
 
 export default function Navbar() {
     const pathname = usePathname();
+    const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState('');
+    const searchRef = React.useRef(null);
+    const inputRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (!isSearchOpen) {
+            return;
+        }
+
+        inputRef.current?.focus();
+    }, [isSearchOpen]);
+
+    React.useEffect(() => {
+        if (!isSearchOpen) {
+            return;
+        }
+
+        const handlePointerDown = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setIsSearchOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [isSearchOpen]);
+
+    const handleSearchSubmit = (event) => {
+        event?.preventDefault();
+        const query = searchValue.trim();
+        if (!query) {
+            inputRef.current?.focus();
+            return;
+        }
+
+        window.location.href = `https://sosoai.libsou.com/result?query=${encodeURIComponent(query)}&mode=speed`;
+    };
 
     return (
         <nav className="navbar glass-strong">
             <div className="navbar-inner">
                 <Link href="/" className="navbar-logo">
                     <div className="logo-glow">
-                        <img src="/chaoxing-logo-mark.svg" alt="超星" className="logo-mark" />
+                        <img
+                            src="/chaoxing-logo-wordmark.png"
+                            alt="超星"
+                            className="logo-mark"
+                        />
                     </div>
                     <div className="logo-lockup">
                         <span className="logo-product">AI 校园 OS</span>
@@ -52,13 +94,47 @@ export default function Navbar() {
                 </div>
 
                 <div className="navbar-actions">
-                    <button className="nav-action-btn" title="AI智搜">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                    </button>
-                    <div className="nav-user-avatar" title="个人中心">
-                        <span>张</span>
+                    <div className="nav-search" ref={searchRef}>
+                        <button
+                            className={`nav-action-btn ${isSearchOpen ? 'active' : ''}`}
+                            title="AI智搜"
+                            type="button"
+                            onClick={() => setIsSearchOpen((prev) => !prev)}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </button>
+
+                        {isSearchOpen && (
+                            <form className="nav-search-popover glass-strong" onSubmit={handleSearchSubmit}>
+                                <input
+                                    ref={inputRef}
+                                    className="nav-search-input"
+                                    type="text"
+                                    placeholder="输入想搜索的问题、论文或资源"
+                                    value={searchValue}
+                                    onChange={(event) => setSearchValue(event.target.value)}
+                                />
+                                <button className="nav-search-submit" type="submit" title="执行搜索">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                    </svg>
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                    <div className="nav-user-profile" title="个人中心">
+                        <div className="nav-user-avatar">
+                            <img
+                                src="/user-avatar.png"
+                                alt="亚敏 Alexis"
+                                className="nav-user-avatar-image"
+                            />
+                        </div>
+                        <div className="nav-user-copy">
+                            <span className="nav-user-name">亚敏 Alexis</span>
+                        </div>
                     </div>
                 </div>
             </div>

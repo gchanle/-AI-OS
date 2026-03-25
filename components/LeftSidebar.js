@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import TasksModal from './TasksModal';
+import { workflowActions } from '@/data/mock';
+import { campusCapabilities } from '@/data/workspace';
 import './LeftSidebar.css';
 
-export default function LeftSidebar({ onNewChat, onSelectSession }) {
+export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'classic', onQuickStart }) {
     const [collapsed, setCollapsed] = useState(false);
     const [activeChat, setActiveChat] = useState(null);
     const [tasks, setTasks] = useState([]);
@@ -15,6 +18,8 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
     const [pageOffset, setPageOffset] = useState(0);
     const [calendarAnchor, setCalendarAnchor] = useState(null);
     const [hoveredCell, setHoveredCell] = useState(null);
+    const [minimalTab, setMinimalTab] = useState('chats');
+    const [minimalSearch, setMinimalSearch] = useState('');
     const heatmapCardRef = useRef(null);
 
     const handleDeleteTask = (taskId) => {
@@ -175,6 +180,202 @@ export default function LeftSidebar({ onNewChat, onSelectSession }) {
             minute: '2-digit',
         });
     };
+
+    const filteredChats = useMemo(() => {
+        const keyword = minimalSearch.trim().toLowerCase();
+        if (!keyword) {
+            return chats;
+        }
+
+        return chats.filter((chat) => (
+            chat.title?.toLowerCase().includes(keyword)
+            || formatHistoryTime(chat).toLowerCase().includes(keyword)
+        ));
+    }, [chats, minimalSearch]);
+
+    const filteredTasks = useMemo(() => {
+        const keyword = minimalSearch.trim().toLowerCase();
+        if (!keyword) {
+            return tasks;
+        }
+
+        return tasks.filter((task) => (
+            task.title?.toLowerCase().includes(keyword)
+            || (task.status || '').toLowerCase().includes(keyword)
+        ));
+    }, [tasks, minimalSearch]);
+
+    const filteredCapabilities = useMemo(() => {
+        const keyword = minimalSearch.trim().toLowerCase();
+        if (!keyword) {
+            return campusCapabilities;
+        }
+
+        return campusCapabilities.filter((capability) => (
+            capability.name.toLowerCase().includes(keyword)
+            || capability.source.toLowerCase().includes(keyword)
+            || capability.summary.toLowerCase().includes(keyword)
+        ));
+    }, [minimalSearch]);
+
+    const filteredSkills = useMemo(() => {
+        const keyword = minimalSearch.trim().toLowerCase();
+        if (!keyword) {
+            return workflowActions;
+        }
+
+        return workflowActions.filter((action) => (
+            action.title.toLowerCase().includes(keyword)
+            || action.desc.toLowerCase().includes(keyword)
+            || action.action.toLowerCase().includes(keyword)
+        ));
+    }, [minimalSearch]);
+
+    if (variant === 'minimal') {
+        if (collapsed) {
+            return (
+                <aside className="ls-sidebar collapsed ls-sidebar-minimal-collapsed glass">
+                    <button className="ls-icon-btn" onClick={() => setCollapsed(false)} title="展开左侧面板">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                    </button>
+                    <button className={`ls-icon-btn ${minimalTab === 'chats' ? 'active' : ''}`} onClick={() => { setMinimalTab('chats'); setCollapsed(false); }} title="对话">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                    </button>
+                    <button className={`ls-icon-btn ${minimalTab === 'library' ? 'active' : ''}`} onClick={() => { setMinimalTab('library'); setCollapsed(false); }} title="库">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                    </button>
+                    <button className={`ls-icon-btn ${minimalTab === 'tasks' ? 'active' : ''}`} onClick={() => { setMinimalTab('tasks'); setCollapsed(false); }} title="任务">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                    </button>
+                </aside>
+            );
+        }
+
+        return (
+            <aside className="ls-sidebar ls-sidebar-minimal glass">
+                <div className="ls-header ls-header-minimal">
+                    <button className="ls-new-btn glass-strong" onClick={onNewChat} title="开启新对话">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <span>开启新对话</span>
+                    </button>
+                    <button className="ls-icon-btn collapse-btn" onClick={() => setCollapsed(true)} title="收起左侧面板">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                    </button>
+                </div>
+
+                <div className="ls-scroll ls-scroll-minimal">
+                    <div className="ls-minimal-search glass-strong">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                        <input
+                            type="text"
+                            value={minimalSearch}
+                            onChange={(event) => setMinimalSearch(event.target.value)}
+                            placeholder="搜索对话、能力、任务"
+                        />
+                    </div>
+
+                    <div className="ls-minimal-tabs">
+                        <button type="button" className={`ls-minimal-tab ${minimalTab === 'chats' ? 'active' : ''}`} onClick={() => setMinimalTab('chats')}>对话</button>
+                        <button type="button" className={`ls-minimal-tab ${minimalTab === 'library' ? 'active' : ''}`} onClick={() => setMinimalTab('library')}>库</button>
+                        <button type="button" className={`ls-minimal-tab ${minimalTab === 'tasks' ? 'active' : ''}`} onClick={() => setMinimalTab('tasks')}>任务</button>
+                    </div>
+
+                    {!isReady ? (
+                        <div className="ls-skeleton-stack">
+                            <div className="ls-skeleton-section">
+                                <div className="skeleton-box ls-skeleton-title"></div>
+                                <div className="skeleton-box ls-skeleton-row"></div>
+                                <div className="skeleton-box ls-skeleton-row"></div>
+                                <div className="skeleton-box ls-skeleton-row short"></div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="ls-live-body">
+                            {minimalTab === 'chats' && (
+                                <div className="ls-section ls-history-section ls-history-section-minimal">
+                                    <div className="ls-sec-title ls-sec-title-minimal">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                        对话
+                                    </div>
+                                    <div className="ls-history">
+                                        {filteredChats.length > 0 ? filteredChats.map((chat, idx) => (
+                                            <div
+                                                key={chat.id || idx}
+                                                className={`ls-chat-item ${activeChat === chat.id ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    setActiveChat(chat.id);
+                                                    if (onSelectSession) onSelectSession(chat.id);
+                                                }}
+                                            >
+                                                <div className="ls-chat-title">{chat.title}</div>
+                                                <div className="ls-chat-time">{formatHistoryTime(chat)}</div>
+                                            </div>
+                                        )) : (
+                                            <div className="ls-empty-text">没有匹配的对话记录</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {minimalTab === 'library' && (
+                                <div className="ls-section ls-library-section">
+                                    <div className="ls-sec-title ls-sec-title-minimal">能力库</div>
+                                    <div className="ls-minimal-card-list">
+                                        {filteredCapabilities.map((capability) => (
+                                            <Link key={capability.id} href={capability.href || '/'} className="ls-mini-card">
+                                                <strong>{capability.name}</strong>
+                                                <span>{capability.source}</span>
+                                            </Link>
+                                        ))}
+                                    </div>
+
+                                    <div className="ls-sec-title ls-sec-title-minimal">技能快捷指令</div>
+                                    <div className="ls-minimal-card-list">
+                                        {filteredSkills.map((action) => (
+                                            <button
+                                                key={action.id}
+                                                type="button"
+                                                className="ls-mini-card action"
+                                                onClick={() => onQuickStart?.(action.action)}
+                                            >
+                                                <strong>{action.title}</strong>
+                                                <span>{action.desc}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {minimalTab === 'tasks' && (
+                                <div className="ls-section ls-library-section">
+                                    <div className="ls-sec-title ls-sec-title-minimal">任务队列</div>
+                                    <div className="ls-minimal-card-list">
+                                        {filteredTasks.length > 0 ? filteredTasks.map((task, idx) => (
+                                            <button
+                                                key={task.id || idx}
+                                                type="button"
+                                                className="ls-mini-card action"
+                                                onClick={() => {
+                                                    if (task.sessionId && onSelectSession) {
+                                                        onSelectSession(task.sessionId);
+                                                    }
+                                                }}
+                                            >
+                                                <strong>{task.title}</strong>
+                                                <span>{task.status === 'completed' ? '已完成' : '进行中'}</span>
+                                            </button>
+                                        )) : (
+                                            <div className="ls-empty-text">当前没有匹配的任务</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </aside>
+        );
+    }
 
     if (collapsed) {
         return (

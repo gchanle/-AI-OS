@@ -10,6 +10,15 @@
     flex-shrink: 0;
 }
 
+.ls-sidebar-minimal {
+    width: 236px;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.ls-sidebar-minimal-collapsed {
+    width: 52px;
+}
+
 .ls-sidebar.collapsed {
     width: 48px;
     display: flex;
@@ -29,6 +38,10 @@
     padding: 20px 16px 12px;
     gap: 8px;
     flex-shrink: 0;
+}
+
+.ls-header-minimal {
+    padding-bottom: 8px;
 }
 
 .ls-new-btn {
@@ -108,6 +121,51 @@
     gap: 20px;
 }
 
+.ls-scroll-minimal {
+    padding-top: 8px;
+}
+
+.ls-minimal-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    min-height: 38px;
+    border-radius: 12px;
+}
+
+.ls-minimal-search input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.ls-minimal-tabs {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.ls-minimal-tab {
+    flex: 1;
+    min-height: 30px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ls-minimal-tab.active {
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--primary);
+}
+
 .ls-skeleton-stack {
     display: flex;
     flex-direction: column;
@@ -170,6 +228,55 @@
     overflow: hidden;
     min-height: 0;
     /* Important for scrollable flex child */
+}
+
+.ls-history-section-minimal {
+    min-height: 0;
+}
+
+.ls-sec-title-minimal {
+    padding-top: 0;
+}
+
+.ls-library-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ls-minimal-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ls-mini-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    text-decoration: none;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.74);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ls-mini-card.action {
+    border: none;
+}
+
+.ls-mini-card strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ls-mini-card span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.45;
 }
 
 
