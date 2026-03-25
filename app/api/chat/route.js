@@ -22,9 +22,146 @@ const BASE_SYSTEM_PROMPT = `你是"萤火虫"，超星 AI 校园 OS 的工作助
 - 科研项目与文献查找
 - 创新创业与竞赛指导`;
 
+function decodeHtmlEntities(input = '') {
+    return input
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+function stripHtml(input = '') {
+    return decodeHtmlEntities(
+        input
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+    );
+}
+
+function normalizeUrl(url = '') {
+    try {
+        return decodeURIComponent(url);
+    } catch {
+        return url;
+    }
+}
+
+function parseSearchResults(html = '') {
+    const results = [];
+    const resultRegex = /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+
+    while ((match = resultRegex.exec(html)) && results.length < 6) {
+        const href = normalizeUrl(match[1]);
+        const title = stripHtml(match[2]);
+        if (!title || !href) {
+            continue;
+        }
+
+        results.push({
+            title,
+            url: href,
+            snippet: '',
+        });
+    }
+
+    const snippetRegex = /<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+    let snippetMatch;
+    let index = 0;
+
+    while ((snippetMatch = snippetRegex.exec(html)) && index < results.length) {
+        results[index].snippet = stripHtml(snippetMatch[1]);
+        index += 1;
+    }
+
+    return results;
+}
+
+async function searchWeb(query) {
+    const response = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0',
+        },
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        throw new Error(`search ${response.status}`);
+    }
+
+    const html = await response.text();
+    return parseSearchResults(html);
+}
+
+async function fetchPageExcerpt(url) {
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0',
+            },
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const html = await response.text();
+        const text = stripHtml(html).slice(0, 900);
+        return text || null;
+    } catch {
+        return null;
+    }
+}
+
+async function buildResearchContext(query, deepResearch) {
+    const results = await searchWeb(query);
+    if (results.length === 0) {
+        return '';
+    }
+
+    const baseLines = results.slice(0, deepResearch ? 5 : 4).map((item, index) => (
+        `[${index + 1}] ${item.title}\n链接：${item.url}\n摘要：${item.snippet || '暂无摘要'}`
+    ));
+
+    if (!deepResearch) {
+        return [
+            '以下是联网搜索结果，请基于这些结果回答，并明确区分“搜索结果事实”与“你的推断”：',
+            ...baseLines,
+        ].join('\n\n');
+    }
+
+    const excerpts = await Promise.all(
+        results.slice(0, 3).map(async (item, index) => {
+            const excerpt = await fetchPageExcerpt(item.url);
+            if (!excerpt) {
+                return null;
+            }
+
+            return `深度研读 [${index + 1}] ${item.title}\n正文摘录：${excerpt}`;
+        })
+    );
+
+    return [
+        '以下是联网搜索和深度研读结果，请优先依据这些材料回答：',
+        ...baseLines,
+        ...excerpts.filter(Boolean),
+    ].join('\n\n');
+}
+
 export async function POST(request) {
     try {
-        const { messages, model, capabilityIds } = await request.json();
+        const {
+            messages,
+            model,
+            capabilityIds,
+            webSearchEnabled = false,
+            deepResearchEnabled = false,
+        } = await request.json();
 
         if (!DASHSCOPE_API_KEY) {
             return NextResponse.json(
@@ -34,13 +171,25 @@ export async function POST(request) {
         }
 
         const resolvedModel = resolveChatModel(model);
+        const latestUserMessage = [...messages].reverse().find((item) => item.role === 'user')?.content || '';
+        const researchContext = (webSearchEnabled || deepResearchEnabled) && latestUserMessage
+            ? await buildResearchContext(latestUserMessage, deepResearchEnabled)
+            : '';
+
         const systemPrompt = [
             BASE_SYSTEM_PROMPT,
             buildCapabilitySystemNote(capabilityIds),
+            webSearchEnabled
+                ? '当前会话已开启联网搜索，请优先基于搜索结果回答，并在结论里显式说明哪些信息来自搜索。'
+                : '当前会话未开启联网搜索，除非用户提供来源，否则不要假装你拿到了实时网络信息。',
+            deepResearchEnabled
+                ? '当前会话已开启深度研究模式。请优先做结构化分析、交叉比对和来源梳理，不要只给一个简短结论。'
+                : '',
         ].join('\n\n');
 
         const fullMessages = [
             { role: 'system', content: systemPrompt },
+            ...(researchContext ? [{ role: 'system', content: researchContext }] : []),
             ...messages,
         ];
 

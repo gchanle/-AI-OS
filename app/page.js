@@ -25,6 +25,8 @@ export default function Home() {
   const [preferredModelId, setPreferredModelId] = useState(defaultChatModelId);
   const [availableModels, setAvailableModels] = useState(chatModelOptions);
   const [workspaceMode, setWorkspaceMode] = useState('classic');
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
 
   useEffect(() => {
     try {
@@ -41,6 +43,12 @@ export default function Home() {
       if (parsedPrefs.workspaceMode) {
         setWorkspaceMode(parsedPrefs.workspaceMode);
       }
+      if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
+        setWebSearchEnabled(parsedPrefs.webSearchEnabled);
+      }
+      if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
+        setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
+      }
     } catch (error) {
       console.error('Failed to restore workspace preferences:', error);
     }
@@ -54,12 +62,14 @@ export default function Home() {
           capabilityIds: selectedCapabilityIds,
           modelId: preferredModelId,
           workspaceMode,
+          webSearchEnabled,
+          deepResearchEnabled,
         })
       );
     } catch (error) {
       console.error('Failed to persist workspace preferences:', error);
     }
-  }, [selectedCapabilityIds, preferredModelId, workspaceMode]);
+  }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled]);
 
   useEffect(() => {
     let mounted = true;
@@ -82,6 +92,34 @@ export default function Home() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const handoffPrompt = url.searchParams.get('firefly_prompt') || localStorage.getItem('firefly_handoff_prompt');
+    const handoffCapabilities = url.searchParams.get('firefly_caps') || localStorage.getItem('firefly_handoff_caps');
+
+    if (!handoffPrompt) {
+      return;
+    }
+
+    if (handoffCapabilities) {
+      setSelectedCapabilityIds(sortCapabilityIds(handoffCapabilities.split(',').map((item) => item.trim())));
+      localStorage.removeItem('firefly_handoff_caps');
+      url.searchParams.delete('firefly_caps');
+    }
+
+    setInitialMessage(handoffPrompt);
+    setChatStarted(true);
+    setCurrentSessionId(null);
+    sessionStorage.removeItem('current_sid');
+    localStorage.removeItem('firefly_handoff_prompt');
+    url.searchParams.delete('firefly_prompt');
+    window.history.replaceState({}, '', url.toString());
   }, []);
 
   const handleStartChat = (message) => {
@@ -159,6 +197,10 @@ export default function Home() {
             preferredModelId={preferredModelId}
             onPreferredModelChange={setPreferredModelId}
             variant={workspaceMode}
+            webSearchEnabled={webSearchEnabled}
+            deepResearchEnabled={deepResearchEnabled}
+            onWebSearchChange={setWebSearchEnabled}
+            onDeepResearchChange={setDeepResearchEnabled}
           />
         ) : (
           <ChatArea
@@ -170,6 +212,10 @@ export default function Home() {
             availableModels={availableModels}
             variant={workspaceMode}
             onToggleCapability={handleToggleCapability}
+            webSearchEnabled={webSearchEnabled}
+            deepResearchEnabled={deepResearchEnabled}
+            onWebSearchChange={setWebSearchEnabled}
+            onDeepResearchChange={setDeepResearchEnabled}
           />
         )}
       </div>

@@ -20,9 +20,12 @@ export default function LandingView({
     preferredModelId,
     onPreferredModelChange,
     variant = 'classic',
+    webSearchEnabled = false,
+    deepResearchEnabled = false,
+    onWebSearchChange,
+    onDeepResearchChange,
 }) {
     const [inputValue, setInputValue] = useState('');
-    const [showSkillMenu, setShowSkillMenu] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const textareaRef = useRef(null);
     const speechRecognitionRef = useRef(null);
@@ -45,12 +48,6 @@ export default function LandingView({
     const mainCapability = selectedCapabilities.length > 0 ? selectedCapabilities[0] : capabilities[0];
     const activeCapabilityNames = selectedCapabilities.map((item) => item.name).join(' · ');
     const isMinimal = variant === 'minimal';
-
-    const handleQuickSkill = (action) => {
-        setInputValue(action);
-        setShowSkillMenu(false);
-        textareaRef.current?.focus();
-    };
 
     const handleVoiceInput = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -104,12 +101,12 @@ export default function LandingView({
 
                     <div className="landing-minimal-copy">
                         <h1>你想让萤火虫先处理什么？</h1>
-                        <p>只保留任务输入、模型切换和后续操作空间，让界面更克制地推进事情。</p>
+                        <p>只保留任务输入、接入能力和核心对话控件，让界面更克制地推进事情。</p>
                     </div>
 
                     <div className="chat-composer-minimal landing-composer-minimal glass">
                         <div className="chat-composer-status">
-                            输入一句任务，萤火虫会继续拆解、推进，并把后续的非对话结果放进右侧操作空间。
+                            输入一句任务，萤火虫会继续拆解、推进，并围绕当前任务保持简洁对话。
                         </div>
                         <div
                             className="chat-input-box chat-input-box-minimal"
@@ -151,24 +148,23 @@ export default function LandingView({
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                                 </button>
-                                <div className="chat-menu-wrap">
-                                    <button className="chat-tool-chip" type="button" onClick={() => setShowSkillMenu((prev) => !prev)}>
-                                        技能
-                                    </button>
-                                    {showSkillMenu && (
-                                        <div className="chat-floating-menu glass-strong">
-                                            {workflowActions.map((action) => (
-                                                <button key={action.id} type="button" className="chat-floating-item" onClick={() => handleQuickSkill(action.action)}>
-                                                    <strong>{action.title}</strong>
-                                                    <span>{action.desc}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <button
+                                    className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => onWebSearchChange?.(!webSearchEnabled)}
+                                >
+                                    联网搜索
+                                </button>
+                                <button
+                                    className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
+                                >
+                                    深度研究
+                                </button>
                                 <div className="chat-menu-wrap">
                                     <button className="chat-tool-chip" type="button" onClick={() => setShowAgentMenu((prev) => !prev)}>
-                                        能力
+                                        接入
                                     </button>
                                     {showAgentMenu && (
                                         <div className="chat-floating-menu glass-strong">

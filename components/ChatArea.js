@@ -6,7 +6,6 @@ import {
     chatModelOptions,
     resolveChatModel,
 } from '@/data/workspace';
-import { workflowActions } from '@/data/mock';
 import './ChatArea.css';
 
 export default function ChatArea({
@@ -18,13 +17,16 @@ export default function ChatArea({
     availableModels = chatModelOptions,
     variant = 'classic',
     onToggleCapability,
+    webSearchEnabled = false,
+    deepResearchEnabled = false,
+    onWebSearchChange,
+    onDeepResearchChange,
 }) {
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [activeCapabilityIds, setActiveCapabilityIds] = useState(defaultCapabilityIds);
     const [activeModelId, setActiveModelId] = useState(preferredModelId);
-    const [showSkillMenu, setShowSkillMenu] = useState(false);
     const [showCapabilityMenu, setShowCapabilityMenu] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const messagesEndRef = useRef(null);
@@ -56,6 +58,8 @@ export default function ChatArea({
                     setMessages(found.messages);
                     setActiveCapabilityIds(found.meta?.capabilityIds?.length ? found.meta.capabilityIds : defaultCapabilityIds);
                     setActiveModelId(found.meta?.modelId || preferredModelId);
+                    onWebSearchChange?.(Boolean(found.meta?.webSearchEnabled));
+                    onDeepResearchChange?.(Boolean(found.meta?.deepResearchEnabled));
                     hasInitialized.current = true; // prevent initialMessage from triggering
                 }
             } catch(e) {}
@@ -64,12 +68,19 @@ export default function ChatArea({
             hasInitialized.current = false;
             setActiveCapabilityIds(defaultCapabilityIds);
             setActiveModelId(preferredModelId);
+            onWebSearchChange?.(false);
+            onDeepResearchChange?.(false);
         }
-    }, [sessionId, initialMessage, defaultCapabilityIds, preferredModelId]);
+    }, [sessionId, initialMessage, defaultCapabilityIds, preferredModelId, onWebSearchChange, onDeepResearchChange]);
 
     const persistConversation = useCallback((allMessages, finalContent, meta) => {
         try {
-            const updatedComplete = [...allMessages, { role: 'ai', content: finalContent, time: new Date() }];
+            const updatedComplete = [...allMessages, {
+                role: 'ai',
+                content: finalContent,
+                time: new Date(),
+                modelId: activeModelId,
+            }];
             const sessions = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
             let sid = sessionStorage.getItem('current_sid');
 
@@ -103,13 +114,19 @@ export default function ChatArea({
             console.error('History save error', error);
             return null;
         }
-    }, []);
+    }, [activeModelId]);
 
     const sendToAI = useCallback(async (allMessages) => {
         setIsTyping(true);
 
         // Add a placeholder AI message for streaming
-        setMessages((prev) => [...prev, { role: 'ai', content: '', time: new Date(), streaming: true }]);
+        setMessages((prev) => [...prev, {
+            role: 'ai',
+            content: '',
+            time: new Date(),
+            streaming: true,
+            modelId: activeModelId,
+        }]);
 
         try {
             // Abort previous request if any
@@ -130,6 +147,8 @@ export default function ChatArea({
                     messages: apiMessages,
                     model: activeModelId,
                     capabilityIds: activeCapabilityIds,
+                    webSearchEnabled,
+                    deepResearchEnabled,
                 }),
                 signal: abortControllerRef.current.signal,
             });
@@ -170,6 +189,7 @@ export default function ChatArea({
                                     updated[lastIdx] = {
                                         ...updated[lastIdx],
                                         content: fullContent,
+                                        modelId: activeModelId,
                                     };
                                 }
                                 return updated;
@@ -191,6 +211,7 @@ export default function ChatArea({
                         ...updated[lastIdx],
                         content: finalContent,
                         streaming: false,
+                        modelId: activeModelId,
                     };
                 }
 
@@ -200,6 +221,8 @@ export default function ChatArea({
             const persistedSessionId = persistConversation(allMessages, finalContent, {
                 capabilityIds: activeCapabilityIds,
                 modelId: activeModelId,
+                webSearchEnabled,
+                deepResearchEnabled,
             });
 
             // Extract tasks asynchronously
@@ -238,6 +261,7 @@ export default function ChatArea({
                         ...updated[lastIdx],
                         content: '⚠️ 网络连接异常，请检查网络后重试。',
                         streaming: false,
+                        modelId: activeModelId,
                     };
                 }
                 return updated;
@@ -245,7 +269,7 @@ export default function ChatArea({
         } finally {
             setIsTyping(false);
         }
-    }, [persistConversation, activeCapabilityIds, activeModelId]);
+    }, [persistConversation, activeCapabilityIds, activeModelId, webSearchEnabled, deepResearchEnabled]);
 
     // Handle initial message from landing page
     useEffect(() => {
@@ -283,12 +307,6 @@ export default function ChatArea({
         const nextModelId = e.target.value;
         setActiveModelId(nextModelId);
         onPreferredModelChange?.(nextModelId);
-    };
-
-    const handleQuickSkill = (action) => {
-        setInputValue(action);
-        setShowSkillMenu(false);
-        textareaRef.current?.focus();
     };
 
     const handleCapabilityToggle = (capabilityId) => {
@@ -407,6 +425,11 @@ export default function ChatArea({
                                         <span className="msg-time">
                                             {msg.streaming ? '正在生成' : formatTime(msg.time)}
                                         </span>
+                                        {msg.role === 'ai' && (
+                                            <span className="msg-model-note">
+                                                该回复来自“{resolveChatModel(msg.modelId || activeModelId).label}”，请注意甄别
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 {msg.role === 'user' && (
@@ -461,7 +484,7 @@ export default function ChatArea({
                     {isMinimal ? (
                         <div className="chat-composer-minimal glass-strong">
                             <div className="chat-composer-status">
-                                继续输入，萤火虫会拆解任务、组织结果，并在右侧操作空间承接非对话内容。
+                                继续输入，萤火虫会拆解任务、组织结果，并围绕当前任务保持简洁对话。
                             </div>
                             <div className="chat-input-box chat-input-box-minimal" onClick={() => textareaRef.current?.focus()}>
                                 <textarea
@@ -489,6 +512,20 @@ export default function ChatArea({
                                             ))}
                                         </select>
                                     </label>
+                                <button
+                                    className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
+                                    type="button"
+                                    onClick={() => onWebSearchChange?.(!webSearchEnabled)}
+                                >
+                                        联网搜索
+                                    </button>
+                                    <button
+                                        className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
+                                    >
+                                        深度研究
+                                    </button>
                                     <button
                                         className={`chat-tool-btn ${isListening ? 'active' : ''}`}
                                         type="button"
@@ -498,23 +535,8 @@ export default function ChatArea({
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                                     </button>
                                     <div className="chat-menu-wrap">
-                                        <button className="chat-tool-chip" type="button" onClick={() => setShowSkillMenu((prev) => !prev)}>
-                                            技能
-                                        </button>
-                                        {showSkillMenu && (
-                                            <div className="chat-floating-menu glass-strong">
-                                                {workflowActions.map((action) => (
-                                                    <button key={action.id} type="button" className="chat-floating-item" onClick={() => handleQuickSkill(action.action)}>
-                                                        <strong>{action.title}</strong>
-                                                        <span>{action.desc}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="chat-menu-wrap">
                                         <button className="chat-tool-chip" type="button" onClick={() => setShowCapabilityMenu((prev) => !prev)}>
-                                            能力
+                                            接入
                                         </button>
                                         {showCapabilityMenu && (
                                             <div className="chat-floating-menu glass-strong">

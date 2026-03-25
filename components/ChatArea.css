@@ -212,7 +212,9 @@
 
 .msg-meta {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
     margin-top: 5px;
 }
 
@@ -220,6 +222,12 @@
     font-size: 11px;
     opacity: 0.62;
     line-height: 1;
+}
+
+.msg-model-note {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    line-height: 1.4;
 }
 
 /* Streaming Cursor */
@@ -482,6 +490,12 @@
 .chat-tool-chip:hover {
     color: var(--text-primary);
     border-color: rgba(0, 102, 204, 0.16);
+}
+
+.chat-tool-chip.active {
+    color: var(--primary);
+    border-color: rgba(0, 102, 204, 0.22);
+    background: rgba(0, 102, 204, 0.08);
 }
 
 .chat-composer-select {
