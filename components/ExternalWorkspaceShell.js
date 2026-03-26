@@ -124,14 +124,16 @@ export default function ExternalWorkspaceShell({
             <aside className={`external-sidebar glass-strong ${isSidebarCollapsed ? 'collapsed' : ''}`}>
                 <div className="external-sidebar-header">
                     {!isSidebarCollapsed && (
-                        <h2>
-                            <span className="external-sidebar-accent">{accent}</span>
-                            <span>{title}</span>
-                        </h2>
-                    )}
-                    {!isSidebarCollapsed && headerControl && (
-                        <div className="external-header-inline-control">
-                            {headerControl}
+                        <div className="external-sidebar-header-copy">
+                            <h2>
+                                <span className="external-sidebar-accent">{accent}</span>
+                                <span>{title}</span>
+                            </h2>
+                            {headerControl && (
+                                <div className="external-header-inline-control">
+                                    {headerControl}
+                                </div>
+                            )}
                         </div>
                     )}
                     <div className="external-sidebar-actions">

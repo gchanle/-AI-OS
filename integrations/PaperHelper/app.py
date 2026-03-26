@@ -1,10 +1,12 @@
 import base64
-import streamlit as st
 import os
-import embed_pdf
-import arxiv_downloader.utils
-import requests
 import re
+from urllib.parse import urlparse
+
+import requests
+import streamlit as st
+
+import embed_pdf
 
 st.set_page_config(
     page_title="PaperHelper", 
@@ -15,6 +17,27 @@ st.set_page_config(
 def extract_arxiv_links(readme_contents):
     arxiv_links = re.findall(r'https://arxiv.org/abs/[^\s)]+', readme_contents)
     return arxiv_links
+
+
+def arxiv_url_to_id(link):
+    parsed = urlparse(link.strip())
+    path = parsed.path.strip('/')
+    if path.startswith('abs/'):
+        return path.split('abs/', 1)[1]
+    if path.startswith('pdf/'):
+        return path.split('pdf/', 1)[1].replace('.pdf', '')
+    return path.split('/')[-1].replace('.pdf', '')
+
+
+def download_arxiv_pdf(arxiv_id, output_dir="./pdf"):
+    os.makedirs(output_dir, exist_ok=True)
+    pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
+    output_path = os.path.join(output_dir, f"{arxiv_id}.pdf")
+    response = requests.get(pdf_url, timeout=30)
+    response.raise_for_status()
+    with open(output_path, "wb") as file:
+        file.write(response.content)
+    return output_path
 
 def get_readme_contents(repo_url):
     user_repo = repo_url.replace("https://github.com/", "")
@@ -29,9 +52,9 @@ def get_readme_contents(repo_url):
         return None
 
 def download_arxiv_paper(link):
-    arxiv_id = arxiv_downloader.utils.url_to_id(link)
+    arxiv_id = arxiv_url_to_id(link)
     try:
-        arxiv_downloader.utils.download(arxiv_id, "./pdf", False)
+        download_arxiv_pdf(arxiv_id, "./pdf")
         st.sidebar.success(f"Downloaded: {link}")
     except Exception as e:
         st.sidebar.error(f"Failed to download {link}: {e}")
@@ -74,9 +97,9 @@ else:
     if st.sidebar.text_input("arxiv link", type="default"):
         arxiv_link = st.sidebar.text_input("arxiv link", type="default", key="unique_arxiv_link")
         if arxiv_link:
-            arxiv_id = arxiv_downloader.utils.url_to_id(arxiv_link)
+            arxiv_id = arxiv_url_to_id(arxiv_link)
         try:
-            arxiv_downloader.utils.download(arxiv_id, "./pdf", False)
+            download_arxiv_pdf(arxiv_id, "./pdf")
             st.sidebar.info("Done!")
         except Exception as e:
             st.sidebar.error(e)
