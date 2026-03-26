@@ -1,8 +1,8 @@
 export const libraryCollections = [
   { id: 'search', label: '智能检索', desc: '馆藏、论文、课程资料与数据库' },
-  { id: 'shelf', label: '我的书架', desc: '在读、借阅、收藏与阅读任务' },
-  { id: 'database', label: '数据库', desc: '常用学术库与特色资源' },
-  { id: 'tasks', label: '研读任务', desc: '拆书、综述、引用与课程阅读' },
+  { id: 'plaza', label: '图书广场', desc: '推荐、搜索与发现图书资源' },
+  { id: 'reading', label: '阅读', desc: '沉浸式阅读、AI 助手与笔记辅助' },
+  { id: 'space', label: '个人空间', desc: '我的书架、我的笔记、阅读记录' },
 ];
 
 export const libraryItems = [
@@ -123,4 +123,9 @@ export const libraryTasks = [
 export const borrowedItems = [
   { id: 'borrow-1', title: '数据库系统概论', due: '03-29', status: '即将到期' },
   { id: 'borrow-2', title: '统计学习方法', due: '04-08', status: '在借' },
+];
+
+export const readingHistory = [
+  { id: 'history-1', title: 'Pattern Recognition and Machine Learning', progress: '读到 第 6 章', updatedAt: '昨晚 22:10' },
+  { id: 'history-2', title: 'Attention Is All You Need', progress: '已摘录 5 条引用', updatedAt: '今天 09:20' },
 ];

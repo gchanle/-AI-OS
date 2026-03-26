@@ -7,6 +7,7 @@ import {
     libraryDatabases,
     libraryItems,
     libraryTasks,
+    readingHistory,
 } from '@/data/library';
 import './library.css';
 
@@ -131,75 +132,231 @@ export default function LibraryPage() {
                 </div>
 
                 <div className="library-shell">
-                    <section className="library-results glass-strong">
-                        <div className="library-section-head">
-                            <div>
-                                <span className="library-section-kicker">检索结果</span>
-                                <h2>{filteredItems.length} 条资料</h2>
-                            </div>
-                            <span className="library-section-meta">当前模式：{libraryCollections.find((item) => item.id === activeCollection)?.label}</span>
-                        </div>
+                    {activeCollection === 'search' && (
+                        <>
+                            <section className="library-results glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">智能搜索</span>
+                                        <h2>{filteredItems.length} 条资料</h2>
+                                    </div>
+                                    <span className="library-section-meta">当前模式：智能检索</span>
+                                </div>
 
-                        <div className="library-result-list">
-                            {filteredItems.map((item) => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    className={`library-result-card ${selectedItem?.id === item.id ? 'active' : ''}`}
-                                    onClick={() => setSelectedItemId(item.id)}
-                                >
-                                    <div className="library-result-top">
-                                        <span className="library-result-type">{typeLabels[item.type]}</span>
-                                        <span className="library-result-status">{item.availability}</span>
+                                <div className="library-result-list">
+                                    {filteredItems.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            className={`library-result-card ${selectedItem?.id === item.id ? 'active' : ''}`}
+                                            onClick={() => setSelectedItemId(item.id)}
+                                        >
+                                            <div className="library-result-top">
+                                                <span className="library-result-type">{typeLabels[item.type]}</span>
+                                                <span className="library-result-status">{item.availability}</span>
+                                            </div>
+                                            <strong>{item.title}</strong>
+                                            <p>{item.subtitle}</p>
+                                            <div className="library-result-meta">
+                                                <span>{item.authors.join(' / ')}</span>
+                                                <span>{item.year}</span>
+                                            </div>
+                                            <div className="library-result-tags">
+                                                {item.tags.map((tag) => (
+                                                    <span key={tag}>{tag}</span>
+                                                ))}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="library-detail glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">资料详情</span>
+                                        <h2>{selectedItem.title}</h2>
                                     </div>
-                                    <strong>{item.title}</strong>
-                                    <p>{item.subtitle}</p>
-                                    <div className="library-result-meta">
-                                        <span>{item.authors.join(' / ')}</span>
-                                        <span>{item.year}</span>
+                                    <span className="library-section-meta">{selectedItem.source}</span>
+                                </div>
+
+                                <div className="library-detail-card">
+                                    <div className="library-detail-meta">
+                                        <span>作者：{selectedItem.authors.join(' / ')}</span>
+                                        <span>索书号：{selectedItem.callNo}</span>
+                                        <span>位置：{selectedItem.location}</span>
                                     </div>
-                                    <div className="library-result-tags">
-                                        {item.tags.map((tag) => (
-                                            <span key={tag}>{tag}</span>
+
+                                    <p className="library-abstract">{selectedItem.abstract}</p>
+
+                                    <div className="library-highlight-list">
+                                        {selectedItem.highlights.map((highlight) => (
+                                            <div key={highlight} className="library-highlight-item">
+                                                {highlight}
+                                            </div>
                                         ))}
                                     </div>
-                                </button>
-                            ))}
-                        </div>
-                    </section>
 
-                    <section className="library-detail glass-strong">
-                        <div className="library-section-head">
-                            <div>
-                                <span className="library-section-kicker">资料详情</span>
-                                <h2>{selectedItem.title}</h2>
-                            </div>
-                            <span className="library-section-meta">{selectedItem.source}</span>
-                        </div>
-
-                        <div className="library-detail-card">
-                            <div className="library-detail-meta">
-                                <span>作者：{selectedItem.authors.join(' / ')}</span>
-                                <span>索书号：{selectedItem.callNo}</span>
-                                <span>位置：{selectedItem.location}</span>
-                            </div>
-
-                            <p className="library-abstract">{selectedItem.abstract}</p>
-
-                            <div className="library-highlight-list">
-                                {selectedItem.highlights.map((highlight) => (
-                                    <div key={highlight} className="library-highlight-item">
-                                        {highlight}
+                                    <div className="library-citation">
+                                        <span className="library-section-kicker">推荐引用</span>
+                                        <div>{selectedItem.citation}</div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
 
-                            <div className="library-citation">
-                                <span className="library-section-kicker">推荐引用</span>
-                                <div>{selectedItem.citation}</div>
-                            </div>
-                        </div>
-                    </section>
+                    {activeCollection === 'plaza' && (
+                        <>
+                            <section className="library-results glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">图书广场</span>
+                                        <h2>个性化推荐</h2>
+                                    </div>
+                                    <span className="library-section-meta">推荐与发现</span>
+                                </div>
+                                <div className="library-result-list">
+                                    {libraryItems.map((item) => (
+                                        <button key={item.id} type="button" className="library-result-card" onClick={() => { setSelectedItemId(item.id); setActiveCollection('reading'); }}>
+                                            <div className="library-result-top">
+                                                <span className="library-result-type">{typeLabels[item.type]}</span>
+                                                <span className="library-result-status">{item.availability}</span>
+                                            </div>
+                                            <strong>{item.title}</strong>
+                                            <p>{item.subtitle}</p>
+                                            <div className="library-result-tags">
+                                                {item.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="library-detail glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">推荐理由</span>
+                                        <h2>{selectedItem.title}</h2>
+                                    </div>
+                                    <span className="library-section-meta">{selectedItem.availability}</span>
+                                </div>
+                                <div className="library-detail-card">
+                                    <p className="library-abstract">{selectedItem.abstract}</p>
+                                    <div className="library-highlight-list">
+                                        {selectedItem.highlights.map((highlight) => (
+                                            <div key={highlight} className="library-highlight-item">
+                                                {highlight}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Link href={handoffHref(`请基于当前图书广场推荐《${selectedItem.title}》帮我说明这本资料为什么值得阅读，并生成一个 3 步阅读任务。`)} className="library-firefly-link secondary">
+                                        推荐交给萤火虫
+                                    </Link>
+                                </div>
+                            </section>
+                        </>
+                    )}
+
+                    {activeCollection === 'reading' && (
+                        <>
+                            <section className="library-results glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">阅读</span>
+                                        <h2>{selectedItem.title}</h2>
+                                    </div>
+                                    <span className="library-section-meta">AI 助手 / 笔记辅助</span>
+                                </div>
+                                <div className="library-reading-card">
+                                    <div className="library-reading-toolbar">
+                                        <button type="button" className="library-reading-chip active">AI 助手</button>
+                                        <button type="button" className="library-reading-chip">笔记辅助</button>
+                                        <button type="button" className="library-reading-chip">沉浸阅读</button>
+                                    </div>
+                                    <div className="library-reading-content">
+                                        <h3>{selectedItem.subtitle}</h3>
+                                        <p>{selectedItem.abstract}</p>
+                                        <p>{selectedItem.highlights.join('；')}</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="library-detail glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">笔记辅助</span>
+                                        <h2>阅读协作</h2>
+                                    </div>
+                                </div>
+                                <div className="library-detail-card">
+                                    <div className="library-highlight-list">
+                                        {libraryTasks.map((task) => (
+                                            <Link
+                                                key={task.id}
+                                                href={handoffHref(`${task.prompt}\n\n当前阅读材料：${selectedItem.title} / ${selectedItem.citation}`)}
+                                                className="library-action-card"
+                                            >
+                                                <strong>{task.title}</strong>
+                                                <span>{task.desc}</span>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
+
+                    {activeCollection === 'space' && (
+                        <>
+                            <section className="library-results glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">个人空间</span>
+                                        <h2>我的书架</h2>
+                                    </div>
+                                </div>
+                                <div className="library-result-list">
+                                    {borrowedItems.map((item) => (
+                                        <div key={item.id} className="library-result-card static">
+                                            <strong>{item.title}</strong>
+                                            <p>{item.status}</p>
+                                            <div className="library-result-meta">
+                                                <span>到期时间</span>
+                                                <span>{item.due}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className="library-detail glass-strong">
+                                <div className="library-section-head">
+                                    <div>
+                                        <span className="library-section-kicker">阅读记录</span>
+                                        <h2>我的笔记与进度</h2>
+                                    </div>
+                                </div>
+                                <div className="library-detail-card">
+                                    {readingHistory.map((item) => (
+                                        <div key={item.id} className="library-history-item">
+                                            <strong>{item.title}</strong>
+                                            <span>{item.progress}</span>
+                                            <small>{item.updatedAt}</small>
+                                        </div>
+                                    ))}
+                                    <div className="library-note-card inline">
+                                        <span className="library-section-kicker">我的笔记</span>
+                                        <textarea
+                                            value={note}
+                                            onChange={(event) => setNote(event.target.value)}
+                                            placeholder="把阅读中需要交给萤火虫继续处理的线索记在这里"
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
                 </div>
             </main>
 

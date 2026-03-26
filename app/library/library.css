@@ -302,6 +302,50 @@
     gap: 16px;
 }
 
+.library-reading-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+}
+
+.library-reading-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.library-reading-chip {
+    min-height: 30px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.library-reading-chip.active {
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--primary);
+}
+
+.library-reading-content {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+    line-height: 1.75;
+}
+
+.library-reading-content h3 {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
 .library-detail-meta {
     display: flex;
     flex-direction: column;
@@ -355,6 +399,10 @@
     text-decoration: none;
 }
 
+.library-result-card.static {
+    cursor: default;
+}
+
 .library-action-card strong,
 .library-db-link strong {
     display: block;
@@ -383,6 +431,31 @@
     color: var(--text-primary);
     font-size: 13px;
     line-height: 1.65;
+}
+
+.library-note-card.inline {
+    margin-top: 0;
+}
+
+.library-history-item {
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.library-history-item strong {
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.library-history-item span,
+.library-history-item small {
+    color: var(--text-secondary);
+    font-size: 12px;
 }
 
 .library-database-list {

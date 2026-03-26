@@ -12,12 +12,14 @@ const OPEN_MODE_LABELS = {
 export default function ExternalWorkspaceShell({
     accent = 'AI',
     title,
+    headerControl = null,
+    storageKey = null,
     navItems,
     frameOffset = 64,
     loadingNoun = '页面',
 }) {
     const initialTab = useMemo(() => navItems[0], [navItems]);
-    const loadedTabsStorageKey = useMemo(() => `external_loaded_tabs:${title}`, [title]);
+    const loadedTabsStorageKey = useMemo(() => `external_loaded_tabs:${storageKey || title}`, [storageKey, title]);
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isLoading, setIsLoading] = useState(true);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -126,6 +128,11 @@ export default function ExternalWorkspaceShell({
                             <span className="external-sidebar-accent">{accent}</span>
                             <span>{title}</span>
                         </h2>
+                    )}
+                    {!isSidebarCollapsed && headerControl && (
+                        <div className="external-header-inline-control">
+                            {headerControl}
+                        </div>
                     )}
                     <div className="external-sidebar-actions">
                         <button
