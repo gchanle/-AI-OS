@@ -77,6 +77,36 @@
     max-width: 100%;
 }
 
+.research-platform-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.research-platform-label {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.research-platform-name {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.research-platform-meta {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
 .external-header-inline-control select {
     height: 32px;
     width: 100%;

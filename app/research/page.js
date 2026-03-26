@@ -1,5 +1,4 @@
 'use client';
-import { useMemo, useState } from 'react';
 import ExternalWorkspaceShell from '@/components/ExternalWorkspaceShell';
 
 const wendaoNavItems = [
@@ -12,46 +11,21 @@ const wendaoNavItems = [
     { id: 'starlink', label: '知识星链', url: 'https://kexuedaohang.libsp.net/#/knowledgeBase', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> },
 ];
 
-const paperHelperNavItems = [
-    { id: 'paperhelper', label: '论文阅读助手', url: 'http://localhost:8501', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></svg> },
-];
-
-const platformMap = {
-    wendao: {
-        label: '闻道科研大厅',
-        navItems: wendaoNavItems,
-    },
-    paperhelper: {
-        label: 'PaperHelper',
-        navItems: paperHelperNavItems,
-    },
-};
-
 export default function ResearchPage() {
-    const [activePlatform, setActivePlatform] = useState('wendao');
-    const currentPlatform = platformMap[activePlatform];
-
-    const headerControl = useMemo(() => (
-        <select
-            value={activePlatform}
-            onChange={(event) => setActivePlatform(event.target.value)}
-            aria-label="切换科研平台"
-        >
-            {Object.entries(platformMap).map(([value, item]) => (
-                <option key={value} value={value}>
-                    {item.label}
-                </option>
-            ))}
-        </select>
-    ), [activePlatform]);
+    const headerControl = (
+        <div className="research-platform-summary">
+            <span className="research-platform-label">当前科研平台</span>
+            <strong className="research-platform-name">闻道科研大厅</strong>
+            <small className="research-platform-meta">第三方科研平台会在筛选完成并适配后再开放切换</small>
+        </div>
+    );
 
     return (
         <ExternalWorkspaceShell
             accent="AI"
             title="科研大厅"
-            storageKey={`research:${activePlatform}`}
             headerControl={headerControl}
-            navItems={currentPlatform.navItems}
+            navItems={wendaoNavItems}
             loadingNoun="科研能力页面"
         />
     );
