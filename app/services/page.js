@@ -12,5 +12,5 @@ const serviceNavItems = [
 ];
 
 export default function ServicesPage() {
-    return <ExternalWorkspaceShell accent="AI" title="办事大厅" navItems={serviceNavItems} loadingNoun="办事页面" />;
+    return <ExternalWorkspaceShell accent="AI" title="办事大厅" navItems={serviceNavItems} loadingNoun="办事页面" capabilityIds={['services']} />;
 }

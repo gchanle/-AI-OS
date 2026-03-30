@@ -3,10 +3,15 @@ import { useState } from 'react';
 import { externalOpenModes } from '@/data/workspace';
 import './ExternalOpenModeControl.css';
 
-export default function ExternalOpenModeControl({ value, onChange }) {
+export default function ExternalOpenModeControl({
+    value,
+    onChange,
+    extraSections = [],
+}) {
     const [open, setOpen] = useState(false);
     const activeMode = externalOpenModes.find((item) => item.id === value) || externalOpenModes[0];
     const showLabel = false;
+    const visibleExtraSections = extraSections.filter((section) => Array.isArray(section.items) && section.items.length > 0);
 
     return (
         <div className="external-mode-control">
@@ -28,6 +33,25 @@ export default function ExternalOpenModeControl({ value, onChange }) {
                 <>
                     <div className="external-mode-overlay" onClick={() => setOpen(false)} />
                     <div className="external-mode-menu glass-strong">
+                        {visibleExtraSections.map((section) => (
+                            <div key={section.title} className="external-mode-section">
+                                <div className="external-mode-title">{section.title}</div>
+                                {section.items.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        className={`external-mode-item ${item.active ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => {
+                                            item.onSelect?.();
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
+                        {visibleExtraSections.length > 0 && <div className="external-mode-divider" />}
                         <div className="external-mode-title">打开方式</div>
                         {externalOpenModes.map((mode) => (
                             <button

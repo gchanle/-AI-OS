@@ -5,6 +5,11 @@ import LeftSidebar from '@/components/LeftSidebar';
 import ChatArea from '@/components/ChatArea';
 import RightSidebar from '@/components/RightSidebar';
 import {
+  consumeFireflyHandoffRequest,
+  loadWorkspacePrefs,
+  saveWorkspacePrefs,
+} from '@/data/campusPlatform';
+import {
   campusCapabilities,
   chatModelOptions,
   defaultCapabilityIds,
@@ -12,6 +17,9 @@ import {
   sortCapabilityIds,
 } from '@/data/workspace';
 import './home.css';
+
+const DASHBOARD_SECTION_ORDER = ['paths', 'modules', 'continuity', 'templates'];
+const DEFAULT_DASHBOARD_SECTIONS = ['paths'];
 
 export default function Home() {
   const workspaceModes = [
@@ -27,49 +35,55 @@ export default function Home() {
   const [workspaceMode, setWorkspaceMode] = useState('classic');
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
+  const [dashboardSections, setDashboardSections] = useState(DEFAULT_DASHBOARD_SECTIONS);
 
   useEffect(() => {
-    try {
-      const rawPrefs = localStorage.getItem('campus_workspace_prefs');
-      if (!rawPrefs) return;
+    const parsedPrefs = loadWorkspacePrefs();
+    if (Array.isArray(parsedPrefs.capabilityIds) && parsedPrefs.capabilityIds.length > 0) {
+      setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds));
+    }
+    if (parsedPrefs.modelId) {
+      setPreferredModelId(parsedPrefs.modelId);
+    }
+    if (parsedPrefs.workspaceMode) {
+      setWorkspaceMode(parsedPrefs.workspaceMode);
+    }
+    if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
+      setWebSearchEnabled(parsedPrefs.webSearchEnabled);
+    }
+    if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
+      setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
+    }
+    if (Array.isArray(parsedPrefs.dashboardSections) && parsedPrefs.dashboardSections.length > 0) {
+      const storedSections = DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item));
+      const isLegacyDefault =
+        (storedSections.length === 3 &&
+          storedSections.includes('paths') &&
+          storedSections.includes('modules') &&
+          storedSections.includes('continuity') &&
+          !storedSections.includes('templates')) ||
+        (storedSections.length === 2 &&
+          storedSections.includes('paths') &&
+          storedSections.includes('modules') &&
+          !storedSections.includes('continuity') &&
+          !storedSections.includes('templates'));
 
-      const parsedPrefs = JSON.parse(rawPrefs);
-      if (Array.isArray(parsedPrefs.capabilityIds) && parsedPrefs.capabilityIds.length > 0) {
-        setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds));
-      }
-      if (parsedPrefs.modelId) {
-        setPreferredModelId(parsedPrefs.modelId);
-      }
-      if (parsedPrefs.workspaceMode) {
-        setWorkspaceMode(parsedPrefs.workspaceMode);
-      }
-      if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
-        setWebSearchEnabled(parsedPrefs.webSearchEnabled);
-      }
-      if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
-        setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
-      }
-    } catch (error) {
-      console.error('Failed to restore workspace preferences:', error);
+      setDashboardSections(
+        isLegacyDefault ? DEFAULT_DASHBOARD_SECTIONS : storedSections
+      );
     }
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        'campus_workspace_prefs',
-        JSON.stringify({
-          capabilityIds: selectedCapabilityIds,
-          modelId: preferredModelId,
-          workspaceMode,
-          webSearchEnabled,
-          deepResearchEnabled,
-        })
-      );
-    } catch (error) {
-      console.error('Failed to persist workspace preferences:', error);
-    }
-  }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled]);
+    saveWorkspacePrefs({
+      capabilityIds: selectedCapabilityIds,
+      modelId: preferredModelId,
+      workspaceMode,
+      webSearchEnabled,
+      deepResearchEnabled,
+      dashboardSections,
+    });
+  }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled, dashboardSections]);
 
   useEffect(() => {
     let mounted = true;
@@ -95,31 +109,19 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    const handoffRequest = consumeFireflyHandoffRequest();
+    if (!handoffRequest?.prompt) {
       return;
     }
 
-    const url = new URL(window.location.href);
-    const handoffPrompt = url.searchParams.get('firefly_prompt') || localStorage.getItem('firefly_handoff_prompt');
-    const handoffCapabilities = url.searchParams.get('firefly_caps') || localStorage.getItem('firefly_handoff_caps');
-
-    if (!handoffPrompt) {
-      return;
+    if (handoffRequest.capabilityIds.length > 0) {
+      setSelectedCapabilityIds(sortCapabilityIds(handoffRequest.capabilityIds));
     }
 
-    if (handoffCapabilities) {
-      setSelectedCapabilityIds(sortCapabilityIds(handoffCapabilities.split(',').map((item) => item.trim())));
-      localStorage.removeItem('firefly_handoff_caps');
-      url.searchParams.delete('firefly_caps');
-    }
-
-    setInitialMessage(handoffPrompt);
+    setInitialMessage(handoffRequest.prompt);
     setChatStarted(true);
     setCurrentSessionId(null);
     sessionStorage.removeItem('current_sid');
-    localStorage.removeItem('firefly_handoff_prompt');
-    url.searchParams.delete('firefly_prompt');
-    window.history.replaceState({}, '', url.toString());
   }, []);
 
   const handleStartChat = (message) => {
@@ -156,6 +158,19 @@ export default function Home() {
     });
   };
 
+  const handleToggleDashboardSection = (sectionId) => {
+    setDashboardSections((prev) => {
+      if (prev.includes(sectionId)) {
+        if (prev.length === 1) {
+          return prev;
+        }
+        return prev.filter((item) => item !== sectionId);
+      }
+
+      return DASHBOARD_SECTION_ORDER.filter((item) => [...prev, sectionId].includes(item));
+    });
+  };
+
   return (
     <div className={`home-layout ${chatStarted ? 'chat-mode' : 'landing-mode'} workspace-${workspaceMode}`}>
       {/* 全局背景修饰（蓝白色块） */}
@@ -163,6 +178,19 @@ export default function Home() {
         <div className="bg-orb bg-orb-1"></div>
         <div className="bg-orb bg-orb-2"></div>
         <div className="bg-orb bg-orb-3"></div>
+      </div>
+
+      <div className="workspace-mode-switch glass-strong" role="tablist" aria-label="萤火虫界面版本">
+        {workspaceModes.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            className={`workspace-mode-button ${workspaceMode === mode.id ? 'active' : ''}`}
+            onClick={() => setWorkspaceMode(mode.id)}
+          >
+            {mode.label}
+          </button>
+        ))}
       </div>
 
       {/* 侧边栏始终存在 */}
@@ -174,18 +202,6 @@ export default function Home() {
       />
 
       <div className="main-content">
-        <div className="workspace-mode-switch glass-strong" role="tablist" aria-label="萤火虫界面版本">
-          {workspaceModes.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              className={`workspace-mode-button ${workspaceMode === mode.id ? 'active' : ''}`}
-              onClick={() => setWorkspaceMode(mode.id)}
-            >
-              {mode.label}
-            </button>
-          ))}
-        </div>
         {/* 只在主区域切换 落地页 / 聊天页 */}
         {!chatStarted ? (
           <LandingView
@@ -201,6 +217,8 @@ export default function Home() {
             deepResearchEnabled={deepResearchEnabled}
             onWebSearchChange={setWebSearchEnabled}
             onDeepResearchChange={setDeepResearchEnabled}
+            dashboardSections={dashboardSections}
+            onToggleDashboardSection={handleToggleDashboardSection}
           />
         ) : (
           <ChatArea

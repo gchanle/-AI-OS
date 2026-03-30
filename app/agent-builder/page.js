@@ -1,5 +1,6 @@
 'use client';
 import ExternalWorkspaceShell from '@/components/ExternalWorkspaceShell';
+import Link from 'next/link';
 
 const agentNavItems = [
     { id: 'agents', label: '智能体管理', url: 'https://demo1.openai.chaoxing.com/personal/own/agent', icon: <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" /></svg> },
@@ -9,5 +10,24 @@ const agentNavItems = [
 ];
 
 export default function AgentBuilderPage() {
-    return <ExternalWorkspaceShell accent="AI" title="能力中心" navItems={agentNavItems} loadingNoun="智能体页面" />;
+    return (
+        <ExternalWorkspaceShell
+            accent="AI"
+            title="能力中心"
+            navItems={agentNavItems}
+            loadingNoun="智能体页面"
+            capabilityIds={['agents']}
+            sidebarFooter={(
+                <div className="external-sidebar-card">
+                    <strong>能力治理台</strong>
+                    <p>连接器、Skills、MCP、CLI 和凭证保险库都收进统一的能力接入中心，不再分散成多个并列入口。</p>
+                    <div className="external-sidebar-link-group">
+                        <Link href="/connectors" className="external-sidebar-link">
+                            打开能力接入中心
+                        </Link>
+                    </div>
+                </div>
+            )}
+        />
+    );
 }

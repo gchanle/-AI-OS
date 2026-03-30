@@ -1,16 +1,20 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import FireflyMark from '@/components/FireflyMark';
+import GlobalMessageCenter from '@/components/GlobalMessageCenter';
 import './Navbar.css';
 import React from 'react';
 
 const icons = {
-    home: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l10 9l-2 2l-8-7l-8 7l-2-2z" /><path d="M4 11v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9" /></svg>,
+    home: <FireflyMark size={18} className="nav-firefly-icon" decorative />,
     service: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
     research: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="7" /><line x1="21" y1="21" x2="15" y2="15" /></svg>,
     assistant: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
     library: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>,
     agent: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4" /><line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" /></svg>,
+    connector: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 1 1 7 7l-1 1" /><path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1" /></svg>,
+    capability: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10H7z" /><path d="M4 4h4" /><path d="M16 4h4" /><path d="M4 20h4" /><path d="M16 20h4" /><path d="M20 8v8" /><path d="M4 8v8" /></svg>,
 };
 
 const navItems = [
@@ -75,7 +79,15 @@ export default function Navbar() {
                         />
                     </div>
                     <div className="logo-lockup">
-                        <span className="logo-product">AI 校园 OS</span>
+                        <span className="logo-product">
+                            <span className="logo-product-mark">
+                                <FireflyMark size={18} className="logo-firefly-icon" decorative />
+                            </span>
+                            <span className="logo-product-copy">
+                                <strong>萤火虫</strong>
+                                <small>AI 校园 OS</small>
+                            </span>
+                        </span>
                     </div>
                 </Link>
 
@@ -94,6 +106,10 @@ export default function Navbar() {
                 </div>
 
                 <div className="navbar-actions">
+                    <Link href="/connectors" className={`nav-utility-link ${pathname.startsWith('/connectors') || pathname.startsWith('/skills') ? 'active' : ''}`}>
+                        <span className="nav-icon">{icons.capability}</span>
+                        <span>能力接入</span>
+                    </Link>
                     <div className="nav-search" ref={searchRef}>
                         <button
                             className={`nav-action-btn ${isSearchOpen ? 'active' : ''}`}
@@ -124,6 +140,7 @@ export default function Navbar() {
                             </form>
                         )}
                     </div>
+                    <GlobalMessageCenter />
                     <div className="nav-user-profile" title="个人中心">
                         <div className="nav-user-avatar">
                             <img

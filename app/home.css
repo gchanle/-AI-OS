@@ -22,12 +22,14 @@
 .workspace-mode-switch {
     position: absolute;
     top: 18px;
-    right: 18px;
-    z-index: 4;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 16;
     display: inline-flex;
     gap: 4px;
     padding: 4px;
     border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .workspace-mode-button {
@@ -126,7 +128,8 @@
 
     .workspace-mode-switch {
         top: 14px;
-        right: 14px;
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .ls-sidebar,

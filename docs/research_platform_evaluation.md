@@ -2,6 +2,8 @@
 
 Updated: 2026-03-26
 
+> Archive note: the `PaperHelper` route has now been retired for this project. This document is kept only as decision context for why it was judged unsuitable.
+
 ## Goal
 
 为 `AI 科研` 找一个可以尽快接入、同时对萤火虫有真实价值的开源科研平台。
@@ -22,7 +24,7 @@ Bohrium 更像“科研空间站”而不是单点工具。它的价值不只在
 - 团队协作与项目沉淀
 - AI 助手贯穿检索、理解、实验、写作
 
-### Why our current PaperHelper integration does not match it
+### Why the evaluated PaperHelper path did not match it
 
 PaperHelper 的定位更接近：
 
@@ -40,7 +42,7 @@ PaperHelper 的定位更接近：
 
 结论：
 
-PaperHelper 可以作为内部能力组件，但不应该直接作为面向用户的 `AI 科研大厅` 替代品。
+PaperHelper 不适合作为当前项目继续投入的方向，也不应该作为面向用户的 `AI 科研大厅` 替代品。
 
 ## Candidate Comparison
 
@@ -62,26 +64,11 @@ Why it was useful for internal evaluation:
 - 对 `AI 图书馆` 和 `AI 科研` 的交叉场景有直接价值
 - 很容易和萤火虫形成联动
 
-Work completed tonight:
-
-- 已经拉取仓库到 `integrations/PaperHelper`
-- 已安装依赖
-- 已用 sample PDF 生成本地索引
-- 已修复新版 LangChain 的关键兼容问题
-- 已写好启动脚本 `integrations/PaperHelper/run.sh`
-- 已在本地端口 `8501` 启动成功
-
-Current integration status:
-
-- 已作为内部可运行研究阅读助手拉起
-- 当前地址：`http://localhost:8501`
-
 Current limitations:
 
 - 更偏“论文问答与阅读”，不是完整科研协作平台
-- 现在使用本地 hash embedding，是为了快速可跑；后续需要更高质量 embedding
-- 仍需进一步美化与和 Firefly 的深联动
-- 不建议继续直接暴露在 `AI 科研大厅` 的正式平台切换中
+- 即便做深度美化和联动，也仍然偏“论文阅读器”而不是“科研工作台”
+- 不建议继续在这条支线上投入产品化精力
 
 ### 2. OpenResearcher
 
@@ -109,19 +96,19 @@ Best use:
 
 ### Immediate path
 
-不要再把 `PaperHelper` 直接作为正式科研大厅暴露给用户。
+不要再把 `PaperHelper` 作为当前项目的继续建设方向。
 
 更好的做法是：
 
-- 先把它保留为内部研究阅读能力组件
-- 萤火虫或图书馆需要“论文问答/精读/引用整理”时再调用它
+- 维持 `AI 科研` 以闻道等更符合校园场景的能力为主
+- 把科研空间的产品化精力放在主壳、流程和任务闭环上
 
 ### Phase 2 path
 
 如果真要做出接近 Bohrium 的体验，优先路线不是继续拼外链，而是自建科研空间主壳：
 
 - 检索层：OpenAlex / Crossref / Semantic Scholar / CNKI / 万方 / 校内资源
-- 阅读层：PaperHelper 这类阅读器能力
+- 阅读层：可替换的论文阅读/精读能力
 - 研究任务层：Firefly 任务拆解、阶段推进、引用清单
 - 结果层：笔记、综述、代码片段、表格与引用导出
 - 计算层：后续再考虑接 Notebook / Sandbox
@@ -146,34 +133,13 @@ Best use:
 2. 用户进入科研平台执行检索/阅读
 3. 检索结果、笔记、引用再回流给 Firefly
 
-## Firefly + PaperHelper Suggested Integration
+## Why this path was not continued
 
-### Query handoff
+问题不在于它“不能用”，而在于它把产品带向了错误的层级：
 
-萤火虫把用户问题转换成：
-
-- 检索问题
-- 论文阅读任务
-- 对比问题
-- 引用整理任务
-
-### Result return
-
-从 PaperHelper 返回：
-
-- 证据段落
-- 论文片段
-- 引用建议
-- 阅读结论
-
-### User value
-
-这会让 `AI 科研` 从“外链工具堆”变成真正的研究闭环：
-
-- 研究问题 -> 检索
-- 检索 -> 阅读
-- 阅读 -> 引用
-- 引用 -> 汇报 / 写作 / 任务拆解
+- 更像单点阅读工具，不像科研空间
+- 对品牌和 B 端工作台气质帮助有限
+- 很容易把 `AI 科研` 做成一个局部能力，而不是完整工作面
 
 ## Decision
 
@@ -189,5 +155,5 @@ Best use:
 
 1. 自建 `AI 科研大厅` 主壳与任务流
 2. 用 OpenAlex / Crossref 等开放检索接口补底层数据
-3. 把 PaperHelper 类工具降级成内部能力，不做前台主平台
+3. 不再继续维护 `PaperHelper` 本地服务，必要时换用更合适的底层能力
 4. 把 OpenResearcher 作为后续深研究引擎候选，而不是今晚直接接入

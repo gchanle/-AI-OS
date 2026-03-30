@@ -1,40 +1,6 @@
-export const campusCapabilities = [
-  {
-    id: 'services',
-    name: 'AI 办事',
-    source: '服务大厅',
-    href: '/services',
-    summary: '办理校园事务、审批流程、日程服务与一网通办入口',
-  },
-  {
-    id: 'research',
-    name: 'AI 科研',
-    source: '闻道',
-    href: '/research',
-    summary: '科研探索、学术追踪、AI 研究员与知识服务',
-  },
-  {
-    id: 'assistant',
-    name: 'AI 助教',
-    source: '超星泛雅',
-    href: '/assistant',
-    summary: '课程教学、作业协同、课堂互动与教学支持',
-  },
-  {
-    id: 'library',
-    name: 'AI 图书馆',
-    source: '超星图书馆',
-    href: '/library',
-    summary: '馆藏检索、借阅服务、阅读支持与学习资源入口',
-  },
-  {
-    id: 'agents',
-    name: 'AI 智能体',
-    source: 'AI 能力中心',
-    href: '/agent-builder',
-    summary: '智能体创建、校园能力编排与院系定制 AI 入口',
-  },
-];
+import { buildCampusCapabilities } from '@/data/campusPlatform';
+
+export const campusCapabilities = buildCampusCapabilities();
 
 export const defaultCapabilityIds = ['services', 'research', 'assistant'];
 

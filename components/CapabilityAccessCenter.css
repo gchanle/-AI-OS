@@ -1,0 +1,299 @@
+.capability-page {
+    height: calc(100vh - var(--navbar-height));
+    padding: 22px;
+    background:
+        radial-gradient(circle at top left, rgba(0, 102, 204, 0.07), transparent 32%),
+        linear-gradient(180deg, #f6f8fc 0%, #f2f5fa 100%);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.capability-shell {
+    max-width: 1520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.capability-kicker,
+.capability-section-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.capability-hero,
+.capability-single-panel,
+.capability-panel,
+.capability-method-card,
+.capability-metric {
+    border-radius: 24px;
+}
+
+.capability-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+}
+
+.capability-hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 860px;
+}
+
+.capability-hero-copy h1,
+.capability-panel h3,
+.capability-method-card h3,
+.capability-single-panel h3 {
+    color: var(--text-primary);
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+.capability-panel h3,
+.capability-method-card h3,
+.capability-single-panel h3 {
+    font-size: 22px;
+}
+
+.capability-hero-copy p,
+.capability-method-card p,
+.capability-panel p,
+.capability-single-panel p,
+.capability-table td,
+.capability-item-card span,
+.capability-item-card small,
+.capability-bullet-list {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.capability-hero-actions,
+.capability-tab-row,
+.capability-panel-head,
+.capability-item-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.capability-hero-actions,
+.capability-panel-head {
+    justify-content: space-between;
+}
+
+.capability-primary-link,
+.capability-inline-link,
+.capability-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 13px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text-secondary);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.capability-primary-link {
+    border: none;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    box-shadow: 0 16px 32px rgba(0, 102, 204, 0.18);
+}
+
+.capability-inline-link:hover,
+.capability-tab.active,
+.capability-tab:hover {
+    color: var(--primary);
+    background: rgba(0, 102, 204, 0.08);
+    border-color: rgba(0, 102, 204, 0.14);
+}
+
+.capability-primary-link:hover,
+.capability-inline-link:hover {
+    transform: translateY(-1px);
+}
+
+.capability-metrics,
+.capability-method-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.capability-metrics {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.capability-method-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.capability-metric,
+.capability-method-card,
+.capability-panel,
+.capability-single-panel {
+    padding: 16px;
+}
+
+.capability-metric span,
+.capability-table thead th,
+.capability-item-card small {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.capability-metric strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 24px;
+    line-height: 1;
+}
+
+.capability-method-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.capability-tab-row {
+    flex-wrap: wrap;
+}
+
+.capability-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.capability-panel-grid > .capability-panel:last-child {
+    grid-column: 1 / -1;
+}
+
+.capability-card-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.capability-item-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: inherit;
+    text-decoration: none;
+}
+
+.capability-item-card strong,
+.capability-table a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.capability-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.capability-status-pill.healthy {
+    background: rgba(52, 199, 89, 0.14);
+    color: #218342;
+}
+
+.capability-status-pill.warning {
+    background: rgba(255, 149, 0, 0.14);
+    color: #c76c02;
+}
+
+.capability-status-pill.draft {
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--text-secondary);
+}
+
+.capability-table-wrap {
+    overflow: auto;
+    margin-top: 10px;
+}
+
+.capability-table {
+    width: 100%;
+    min-width: 980px;
+    border-collapse: collapse;
+}
+
+.capability-table thead th {
+    text-align: left;
+    padding: 12px 10px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.capability-table tbody td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.capability-bullet-list {
+    margin: 0;
+    padding-left: 18px;
+}
+
+@media (max-width: 1280px) {
+    .capability-metrics,
+    .capability-method-grid,
+    .capability-panel-grid,
+    .capability-card-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 920px) {
+    .capability-hero {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .capability-hero-actions,
+    .capability-panel-head {
+        flex-wrap: wrap;
+    }
+
+    .capability-metrics,
+    .capability-method-grid,
+    .capability-panel-grid,
+    .capability-card-list {
+        grid-template-columns: 1fr;
+    }
+}

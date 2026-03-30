@@ -5,6 +5,8 @@ import { workflowActions } from '@/data/mock';
 import { campusCapabilities } from '@/data/workspace';
 import './LeftSidebar.css';
 
+const LEFT_SIDEBAR_COLLAPSE_KEY = 'campus_left_sidebar_collapsed';
+
 export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'classic', onQuickStart }) {
     const [collapsed, setCollapsed] = useState(false);
     const [activeChat, setActiveChat] = useState(null);
@@ -21,6 +23,25 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
     const [minimalTab, setMinimalTab] = useState('chats');
     const [minimalSearch, setMinimalSearch] = useState('');
     const heatmapCardRef = useRef(null);
+
+    useEffect(() => {
+        try {
+            const storedState = localStorage.getItem(LEFT_SIDEBAR_COLLAPSE_KEY);
+            if (storedState !== null) {
+                setCollapsed(storedState === '1');
+            }
+        } catch (error) {
+            console.error('Failed to restore left sidebar state:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(LEFT_SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0');
+        } catch (error) {
+            console.error('Failed to persist left sidebar state:', error);
+        }
+    }, [collapsed]);
 
     const handleDeleteTask = (taskId) => {
         const newTasks = tasks.filter(t => t.id !== taskId);

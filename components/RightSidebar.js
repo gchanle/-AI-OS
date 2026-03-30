@@ -12,6 +12,8 @@ import {
 } from '@/data/mock';
 import './RightSidebar.css';
 
+const RIGHT_SIDEBAR_COLLAPSE_KEY = 'campus_right_sidebar_collapsed';
+
 const STATUS_MAP = {
     processing: { label: '审核中', color: '#FF9500' },
     approved: { label: '已通过', color: '#34C759' },
@@ -53,6 +55,25 @@ export default function RightSidebar() {
     const [collapsed, setCollapsed] = useState(false);
     const [liveData, setLiveData] = useState({ weibo: [], news: [] });
     const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        try {
+            const storedState = localStorage.getItem(RIGHT_SIDEBAR_COLLAPSE_KEY);
+            if (storedState !== null) {
+                setCollapsed(storedState === '1');
+            }
+        } catch (error) {
+            console.error('Failed to restore right sidebar state:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(RIGHT_SIDEBAR_COLLAPSE_KEY, collapsed ? '1' : '0');
+        } catch (error) {
+            console.error('Failed to persist right sidebar state:', error);
+        }
+    }, [collapsed]);
 
     useEffect(() => {
         let mounted = true;

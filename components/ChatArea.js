@@ -359,6 +359,9 @@ export default function ChatArea({
         setIsListening(true);
         recognition.start();
     };
+    const preventComposerFocusSteal = (event) => {
+        event.stopPropagation();
+    };
 
     const firstUserMessage = messages.find((message) => message.role === 'user')?.content || initialMessage || '新的校园任务';
     const workspaceTitle = firstUserMessage.length > 40 ? `${firstUserMessage.slice(0, 40)}...` : firstUserMessage;
@@ -454,33 +457,6 @@ export default function ChatArea({
 
             <div className="chat-input-area">
                 <div className="chat-container-inner">
-                    {!isMinimal && (
-                        <div className="chat-toolbar">
-                            <div className="chat-toolbar-capabilities">
-                                <span className="chat-toolbar-label">会话配置</span>
-                                <span className="chat-toolbar-pill" title={capabilitySummary}>
-                                    已接入 {activeCapabilities.length} 个校园能力
-                                </span>
-                            </div>
-                            <div className="chat-toolbar-actions">
-                                <label className="chat-toolbar-model-picker">
-                                    <span className="chat-toolbar-model-label">主对话模型</span>
-                                    <select
-                                        className="chat-toolbar-model-select"
-                                        value={activeModelId}
-                                        onChange={handleModelChange}
-                                    >
-                                        {availableModels.map((model) => (
-                                            <option key={model.id} value={model.id}>
-                                                {model.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
                     {isMinimal ? (
                         <div className="chat-composer-minimal glass-strong">
                             <div className="chat-composer-status">
@@ -497,7 +473,11 @@ export default function ChatArea({
                                     rows={4}
                                 />
                             </div>
-                            <div className="chat-composer-footer">
+                            <div
+                                className="chat-composer-footer"
+                                onMouseDown={preventComposerFocusSteal}
+                                onClick={preventComposerFocusSteal}
+                            >
                                 <div className="chat-composer-tools">
                                     <button className="chat-tool-btn" type="button" title="添加附件">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
@@ -580,15 +560,78 @@ export default function ChatArea({
                                 onKeyDown={handleKeyDown}
                                 rows={3}
                             />
-                            <button
-                                className={`chat-send ${inputValue.trim() ? 'active' : ''}`}
-                                onClick={handleSend}
-                                disabled={!inputValue.trim() || isTyping}
+                            <div
+                                className="chat-input-footer"
+                                onMouseDown={preventComposerFocusSteal}
+                                onClick={preventComposerFocusSteal}
                             >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                                </svg>
-                            </button>
+                                <div className="chat-composer-tools">
+                                    <label className="chat-composer-select">
+                                        <span>模型</span>
+                                        <select value={activeModelId} onChange={handleModelChange}>
+                                            {availableModels.map((model) => (
+                                                <option key={model.id} value={model.id}>
+                                                    {model.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <button
+                                        className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => onWebSearchChange?.(!webSearchEnabled)}
+                                    >
+                                        联网搜索
+                                    </button>
+                                    <button
+                                        className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
+                                        type="button"
+                                        onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
+                                    >
+                                        深度研究
+                                    </button>
+                                    <button
+                                        className={`chat-tool-btn ${isListening ? 'active' : ''}`}
+                                        type="button"
+                                        title="语音输入"
+                                        onClick={handleVoiceInput}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
+                                    </button>
+                                    <div className="chat-menu-wrap">
+                                        <button className="chat-tool-chip" type="button" onClick={() => setShowCapabilityMenu((prev) => !prev)}>
+                                            接入
+                                        </button>
+                                        {showCapabilityMenu && (
+                                            <div className="chat-floating-menu glass-strong">
+                                                {campusCapabilities.map((capability) => (
+                                                    <button
+                                                        key={capability.id}
+                                                        type="button"
+                                                        className={`chat-floating-item ${activeCapabilityIds.includes(capability.id) ? 'active' : ''}`}
+                                                        onClick={() => handleCapabilityToggle(capability.id)}
+                                                    >
+                                                        <strong>{capability.name}</strong>
+                                                        <span>{capability.source}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="chat-inline-config" title={capabilitySummary}>
+                                        已接入 {activeCapabilities.length} 个校园能力
+                                    </span>
+                                </div>
+                                <button
+                                    className={`chat-send ${inputValue.trim() ? 'active' : ''}`}
+                                    onClick={handleSend}
+                                    disabled={!inputValue.trim() || isTyping}
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     )}
                     <div className="chat-footer-hint">AI 生成内容仅供参考，涉及制度与流程时请以校园正式通知为准。</div>

@@ -7,5 +7,5 @@ const assistantNavItems = [
 ];
 
 export default function AssistantPage() {
-    return <ExternalWorkspaceShell accent="AI" title="助教中心" navItems={assistantNavItems} loadingNoun="教学页面" />;
+    return <ExternalWorkspaceShell accent="AI" title="助教中心" navItems={assistantNavItems} loadingNoun="教学页面" capabilityIds={['assistant']} />;
 }

@@ -49,21 +49,23 @@ async function probeModel(modelId) {
 }
 
 export async function GET() {
+  const probeCandidates = Array.from(
+    new Map(
+      [...chatModelCandidates, ...loadEnvCandidates()].map((candidate) => [candidate.id, candidate])
+    ).values()
+  );
+
   if (!DASHSCOPE_API_KEY) {
     return NextResponse.json({
-      models: [resolveChatModel(defaultChatModelId)],
+      models: probeCandidates.length > 0
+        ? probeCandidates
+        : [resolveChatModel(defaultChatModelId)],
     });
   }
 
   if (cachedModels && Date.now() - cachedAt < CACHE_TTL_MS) {
     return NextResponse.json({ models: cachedModels });
   }
-
-  const probeCandidates = Array.from(
-    new Map(
-      [...chatModelCandidates, ...loadEnvCandidates()].map((candidate) => [candidate.id, candidate])
-    ).values()
-  );
 
   const results = await Promise.all(
     probeCandidates.map(async (candidate) => ({
@@ -78,7 +80,7 @@ export async function GET() {
 
   cachedModels = supportedModels.length > 0
     ? supportedModels
-    : [resolveChatModel(defaultChatModelId)];
+    : (probeCandidates.length > 0 ? probeCandidates : [resolveChatModel(defaultChatModelId)]);
   cachedAt = Date.now();
 
   return NextResponse.json({ models: cachedModels });

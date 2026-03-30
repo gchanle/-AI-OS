@@ -31,6 +31,7 @@
     /* Layout */
     --navbar-height: 56px;
     --sidebar-width: 252px;
+    --left-sidebar-collapsed-width: 56px;
     --right-sidebar-width: 286px;
     
     /* Radius */

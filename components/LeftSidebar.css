@@ -11,16 +11,16 @@
 }
 
 .ls-sidebar-minimal {
-    width: 236px;
+    width: var(--sidebar-width);
     background: rgba(255, 255, 255, 0.78);
 }
 
 .ls-sidebar-minimal-collapsed {
-    width: 52px;
+    width: var(--left-sidebar-collapsed-width);
 }
 
 .ls-sidebar.collapsed {
-    width: 48px;
+    width: var(--left-sidebar-collapsed-width);
     display: flex;
     flex-direction: column;
     align-items: center;

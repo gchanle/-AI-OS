@@ -1,8 +1,0 @@
-langchain
-openai
-streamlit
-faiss-cpu
-tiktoken
-langchainhub
-pypdf
-arxiv-downloader
