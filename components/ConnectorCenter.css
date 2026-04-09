@@ -1,0 +1,713 @@
+.connector-page {
+    height: calc(100vh - var(--navbar-height));
+    padding: 22px;
+    background:
+        radial-gradient(circle at top left, rgba(0, 102, 204, 0.07), transparent 30%),
+        linear-gradient(180deg, #f6f8fc 0%, #f2f5fa 100%);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.connector-page-shell {
+    max-width: 1520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.connector-kicker,
+.connector-section-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.connector-console-head,
+.connector-control-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+    border-radius: 26px;
+}
+
+.connector-console-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 840px;
+}
+
+.connector-console-copy h1,
+.connector-control-primary h2 {
+    color: var(--text-primary);
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+.connector-control-primary h2 {
+    font-size: 22px;
+}
+
+.connector-console-copy p,
+.connector-panel p,
+.connector-field p,
+.connector-auth-card p,
+.connector-auth-card span,
+.connector-detail-overview-head p,
+.connector-step-item p,
+.connector-bullet-list,
+.connector-cell-main span,
+.connector-runtime-item span,
+.connector-table td,
+.connector-audit-row p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.connector-console-actions,
+.connector-filter-row,
+.connector-detail-head-actions,
+.connector-detail-overview-head,
+.connector-tab-row,
+.connector-result-meta,
+.connector-control-meta,
+.connector-control-topline,
+.connector-panel-head,
+.connector-bulk-bar,
+.connector-bulk-actions,
+.connector-row-actions,
+.connector-drawer-actions,
+.connector-drawer-head,
+.connector-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.connector-console-actions,
+.connector-toolbar-right {
+    flex-shrink: 0;
+}
+
+.connector-console-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.connector-strip-card {
+    padding: 14px 16px;
+    border-radius: 18px;
+}
+
+.connector-strip-card span,
+.connector-control-meta span,
+.connector-control-type,
+.connector-table thead th,
+.connector-runtime-item span,
+.connector-field span,
+.connector-bulk-count,
+.connector-sort-select span,
+.connector-cell-main span {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.connector-strip-card strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 24px;
+    line-height: 1;
+}
+
+.connector-strip-card.attention {
+    background: rgba(255, 149, 0, 0.08);
+}
+
+.connector-table-shell,
+.connector-panel {
+    border-radius: 24px;
+    padding: 16px;
+}
+
+.connector-detail-overview {
+    border-radius: 24px;
+    padding: 18px;
+}
+
+.connector-detail-overview-head {
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.connector-detail-overview-head h3 {
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.connector-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.connector-overview-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.connector-overview-card span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.connector-overview-card strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.45;
+}
+
+.connector-overview-card p {
+    margin-top: 8px;
+}
+
+.connector-table-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+}
+
+.connector-toolbar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.connector-search,
+.connector-sort-select select,
+.connector-field input,
+.connector-field select,
+.connector-field textarea {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    padding: 0 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.connector-field textarea {
+    min-height: 90px;
+    padding: 12px 14px;
+    resize: vertical;
+}
+
+.connector-search:focus,
+.connector-sort-select select:focus,
+.connector-field input:focus,
+.connector-field select:focus,
+.connector-field textarea:focus {
+    border-color: rgba(0, 102, 204, 0.22);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.08);
+}
+
+.connector-sort-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 160px;
+}
+
+.connector-chip,
+.connector-tab,
+.connector-inline-link,
+.connector-secondary-btn,
+.connector-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 13px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.connector-chip,
+.connector-tab,
+.connector-secondary-btn,
+.connector-inline-link {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.connector-chip.active,
+.connector-tab.active {
+    border-color: rgba(0, 102, 204, 0.14);
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+}
+
+.connector-primary-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--primary), #2b8cff);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(0, 102, 204, 0.15);
+}
+
+.connector-bulk-bar {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 12px 0 4px;
+}
+
+.connector-bulk-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.connector-table-wrap {
+    overflow: auto;
+    margin-top: 8px;
+}
+
+.connector-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1080px;
+}
+
+.connector-table thead th {
+    text-align: left;
+    padding: 12px 10px;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.connector-table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.connector-table tbody tr.active {
+    background: rgba(0, 102, 204, 0.05);
+}
+
+.connector-table tbody td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    vertical-align: middle;
+}
+
+.connector-cell-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.connector-cell-main strong,
+.connector-runtime-item strong,
+.connector-field strong,
+.connector-audit-row strong {
+    color: var(--text-primary);
+}
+
+.connector-row-actions {
+    flex-wrap: wrap;
+}
+
+.connector-status-pill {
+    min-height: 24px;
+    width: fit-content;
+    padding: 0 9px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.connector-status-pill.healthy {
+    background: rgba(52, 199, 89, 0.14);
+    color: #218342;
+}
+
+.connector-status-pill.warning {
+    background: rgba(255, 149, 0, 0.14);
+    color: #c76c02;
+}
+
+.connector-status-pill.limited {
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+}
+
+.connector-status-pill.draft,
+.connector-status-pill.paused {
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-secondary);
+}
+
+.connector-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.72fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.connector-detail,
+.connector-side-context {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.connector-control-primary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.connector-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.connector-config-layout,
+.connector-authorization-layout,
+.connector-execution-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.connector-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.connector-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.connector-field.full {
+    grid-column: 1 / -1;
+}
+
+.connector-toggle-list,
+.connector-auth-list,
+.connector-step-list,
+.connector-prompt-list,
+.connector-runtime-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.connector-toggle,
+.connector-auth-card,
+.connector-step-item,
+.connector-result-card,
+.connector-policy-note,
+.connector-prompt-card,
+.connector-runtime-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.connector-toggle,
+.connector-auth-card {
+    align-items: flex-start;
+}
+
+.connector-auth-card,
+.connector-prompt-card {
+    cursor: pointer;
+}
+
+.connector-auth-card.active {
+    border-color: rgba(0, 102, 204, 0.14);
+    background: rgba(0, 102, 204, 0.06);
+}
+
+.connector-toggle input,
+.connector-auth-card input {
+    margin-top: 3px;
+}
+
+.connector-permission-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.connector-permission-pill {
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.connector-runtime-item {
+    flex-direction: column;
+}
+
+.connector-step-item span:first-child {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.connector-step-item.done span:first-child,
+.connector-step-item.current span:first-child {
+    background: rgba(52, 199, 89, 0.16);
+    color: #218342;
+}
+
+.connector-result-card {
+    flex-direction: column;
+}
+
+.connector-result-meta {
+    flex-wrap: wrap;
+}
+
+.connector-prompt-card {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.connector-bullet-list {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.connector-audit-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.connector-audit-columns,
+.connector-audit-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 0.8fr 0.6fr;
+    gap: 12px;
+}
+
+.connector-audit-columns {
+    padding: 0 8px;
+}
+
+.connector-audit-row {
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.connector-audit-row p {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+.connector-side-context {
+    position: sticky;
+    top: 18px;
+}
+
+.connector-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    border: none;
+    background: rgba(10, 18, 30, 0.18);
+    cursor: pointer;
+}
+
+.connector-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 141;
+    width: min(560px, 100vw);
+    padding: 22px;
+    border-left: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: rgba(250, 252, 255, 0.94);
+}
+
+.connector-drawer-head {
+    justify-content: space-between;
+}
+
+.connector-drawer-head h3 {
+    color: var(--text-primary);
+    font-size: 22px;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-top: 8px;
+}
+
+.connector-drawer-body {
+    overflow: auto;
+    padding-right: 2px;
+}
+
+.connector-drawer-actions {
+    justify-content: flex-end;
+}
+
+.connector-toast {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 150;
+    min-width: 280px;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    color: white;
+    background: rgba(20, 28, 40, 0.92);
+    box-shadow: 0 18px 36px rgba(8, 14, 24, 0.24);
+}
+
+.connector-toast.success {
+    background: rgba(33, 131, 66, 0.94);
+}
+
+.connector-toast.info {
+    background: rgba(0, 102, 204, 0.94);
+}
+
+.connector-toast strong {
+    font-size: 14px;
+}
+
+.connector-toast span {
+    font-size: 12px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.84);
+}
+
+@media (max-width: 1180px) {
+    .connector-console-head,
+    .connector-control-bar,
+    .connector-table-toolbar,
+    .connector-detail-grid,
+    .connector-overview-grid,
+    .connector-config-layout,
+    .connector-authorization-layout,
+    .connector-execution-layout,
+    .connector-console-strip {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .connector-side-context {
+        position: static;
+    }
+}
+
+@media (max-width: 900px) {
+    .connector-page {
+        padding: 14px;
+    }
+
+    .connector-form-grid,
+    .connector-permission-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .connector-console-strip {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .connector-page {
+        padding: 12px;
+    }
+
+    .connector-console-copy h1 {
+        font-size: 24px;
+    }
+
+    .connector-console-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .connector-table {
+        min-width: 920px;
+    }
+
+    .connector-drawer {
+        width: 100vw;
+        padding: 18px;
+    }
+}

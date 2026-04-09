@@ -1,0 +1,18 @@
+.global-firefly-drawer-layer {
+    position: fixed;
+    top: var(--navbar-height);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 28;
+    pointer-events: none;
+}
+
+.global-firefly-drawer-layer .firefly-side-shell {
+    position: absolute;
+    inset: 0;
+}
+
+.global-firefly-panel {
+    max-height: calc(100vh - var(--navbar-height) - 32px);
+}

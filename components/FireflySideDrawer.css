@@ -1,0 +1,737 @@
+.firefly-side-shell {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 24;
+}
+
+.firefly-side-launcher,
+.firefly-side-panel,
+.firefly-side-backdrop {
+    pointer-events: auto;
+}
+
+.firefly-side-launcher {
+    position: absolute;
+    right: 18px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 253, 0.96));
+    box-shadow: -10px 18px 40px rgba(15, 23, 42, 0.10);
+    color: var(--text-primary);
+    cursor: grab;
+    transition: box-shadow 0.28s ease, right 0.28s ease, width 0.24s ease, border-radius 0.24s ease, padding 0.24s ease;
+    touch-action: none;
+}
+
+.firefly-side-launcher:hover,
+.firefly-side-launcher.open {
+    box-shadow: -14px 22px 44px rgba(15, 23, 42, 0.14);
+}
+
+.firefly-side-launcher:active {
+    cursor: grabbing;
+}
+
+.firefly-side-launcher.open {
+    right: min(420px, calc(100vw - 72px));
+    width: auto;
+    min-height: 54px;
+    padding: 0 14px 0 12px;
+    border-radius: 18px 0 0 18px;
+    cursor: pointer;
+}
+
+.firefly-side-launcher-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: rgba(0, 102, 204, 0.10);
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.firefly-side-launcher-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-width 0.24s ease, opacity 0.18s ease, margin-left 0.24s ease;
+    margin-left: 0;
+}
+
+.firefly-side-launcher.open .firefly-side-launcher-copy {
+    max-width: 160px;
+    opacity: 1;
+    margin-left: 10px;
+}
+
+.firefly-side-launcher-copy strong {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.firefly-side-launcher-copy small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.firefly-side-backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.24s ease, visibility 0.24s ease;
+}
+
+.firefly-side-backdrop.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.firefly-side-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: min(396px, calc(100vw - 32px));
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 253, 0.96));
+    box-shadow: -20px 28px 60px rgba(15, 23, 42, 0.16);
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.firefly-side-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.firefly-side-header.compact {
+    align-items: center;
+    gap: 12px;
+}
+
+.firefly-side-header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.firefly-side-header.compact .firefly-side-header-copy {
+    gap: 2px;
+}
+
+.firefly-side-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.firefly-side-header-copy h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.firefly-side-header.compact .firefly-side-header-copy h3 {
+    font-size: 17px;
+    line-height: 1.25;
+}
+
+.firefly-side-header-copy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.firefly-side-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.firefly-side-model-badge,
+.firefly-side-link,
+.firefly-side-chip,
+.firefly-side-shortcut,
+.firefly-side-model-select {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.firefly-side-model-badge {
+    color: var(--primary);
+    border-color: rgba(0, 102, 204, 0.14);
+    background: rgba(0, 102, 204, 0.08);
+}
+
+.firefly-side-link {
+    text-decoration: none;
+}
+
+.firefly-side-link:hover,
+.firefly-side-shortcut:hover {
+    color: var(--text-primary);
+    border-color: rgba(0, 102, 204, 0.16);
+}
+
+.firefly-side-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-tertiary);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.firefly-side-collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.firefly-side-collapse-btn:hover {
+    color: var(--text-primary);
+    background: rgba(15, 23, 42, 0.06);
+    border-color: rgba(0, 102, 204, 0.14);
+}
+
+.firefly-side-chip-row,
+.firefly-side-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.firefly-side-chip {
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.03);
+    font-weight: 500;
+}
+
+.firefly-side-shortcut {
+    cursor: pointer;
+}
+
+.firefly-side-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+}
+
+.firefly-side-empty {
+    margin: auto 0;
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px dashed rgba(0, 102, 204, 0.14);
+    background: linear-gradient(180deg, rgba(0, 102, 204, 0.05), rgba(0, 102, 204, 0.02));
+}
+
+.firefly-side-empty h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.firefly-side-empty p {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.firefly-side-message {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.firefly-side-message.user {
+    align-items: flex-end;
+}
+
+.firefly-side-message.ai {
+    align-items: flex-start;
+}
+
+.firefly-side-message-body {
+    max-width: 92%;
+    padding: 12px 14px;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.firefly-side-message.user .firefly-side-message-body {
+    background: linear-gradient(180deg, rgba(0, 102, 204, 0.14), rgba(0, 102, 204, 0.08));
+    color: var(--text-primary);
+}
+
+.firefly-side-message.ai .firefly-side-message-body {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+}
+
+.firefly-side-inline-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.firefly-side-inline-link:hover {
+    text-decoration: underline;
+}
+
+.firefly-side-message-body .rich-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.firefly-side-message-body .rich-paragraph,
+.firefly-side-message-body .rich-quote,
+.firefly-side-message-body .rich-list,
+.firefly-side-message-body .rich-heading,
+.firefly-side-message-body .rich-code-block {
+    margin: 0;
+}
+
+.firefly-side-message-body .rich-heading {
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.firefly-side-message-body .rich-heading.level-1 {
+    font-size: 16px;
+}
+
+.firefly-side-message-body .rich-heading.level-2 {
+    font-size: 15px;
+}
+
+.firefly-side-message-body .rich-heading.level-3 {
+    font-size: 14px;
+}
+
+.firefly-side-message-body .rich-paragraph {
+    line-height: 1.72;
+}
+
+.firefly-side-message-body .rich-list {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.firefly-side-message-body .rich-inline-code {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.06);
+    font-size: 0.92em;
+}
+
+.firefly-side-message-body .rich-quote {
+    padding-left: 10px;
+    border-left: 3px solid rgba(0, 102, 204, 0.16);
+    color: var(--text-secondary);
+}
+
+.firefly-side-message-body .rich-code-block {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.92);
+    color: rgba(255, 255, 255, 0.94);
+    overflow-x: auto;
+    line-height: 1.62;
+}
+
+.firefly-side-message-body .rich-summary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-summary-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.firefly-side-message-body .rich-summary-title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-summary-title {
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.firefly-side-message-body .rich-summary-count {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.firefly-side-message-body .rich-summary-link {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 0 8px;
+    border-radius: 8px;
+    background: rgba(52, 199, 89, 0.12);
+    color: #1d8a43;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-badge.pending {
+    background: rgba(255, 149, 0, 0.14);
+    color: #d98300;
+}
+
+.firefly-side-message-body .rich-summary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.firefly-side-message-body .rich-summary-action {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-actions.inline {
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-summary-empty {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.firefly-side-message-body .rich-action-link-wrap {
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-action-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.firefly-side-message-body .rich-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-subsection-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-subsection-title {
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.firefly-side-message-body .rich-subsection-count {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.firefly-side-message-body .rich-subsection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-subsection-item {
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.03);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-side-message-body .rich-subsection-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.firefly-side-message-body .rich-subsection-item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-side-message-body .rich-subsection-item-title {
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.firefly-side-message-body .rich-subsection-item-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.firefly-side-message-body .rich-table-wrap {
+    overflow-x: auto;
+}
+
+.firefly-side-message-body .rich-table,
+.firefly-side-message-body .rich-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.firefly-side-message-body .rich-table th,
+.firefly-side-message-body .rich-table td,
+.firefly-side-message-body .rich-summary-table th,
+.firefly-side-message-body .rich-summary-table td {
+    padding: 8px 9px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    text-align: left;
+    vertical-align: top;
+}
+
+.firefly-side-message-body .rich-table th,
+.firefly-side-message-body .rich-summary-table th {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.firefly-side-message-body .rich-table .title-cell,
+.firefly-side-message-body .rich-summary-table .title-cell {
+    min-width: 180px;
+    line-height: 1.45;
+}
+
+.firefly-side-message-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    padding: 0 4px;
+}
+
+.firefly-side-composer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.90);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.firefly-side-composer:focus-within {
+    border-color: rgba(0, 102, 204, 0.18);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.08);
+}
+
+.firefly-side-composer textarea {
+    width: 100%;
+    min-height: 110px;
+    border: none;
+    resize: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.75;
+}
+
+.firefly-side-composer textarea::placeholder {
+    color: var(--text-tertiary);
+}
+
+.firefly-side-composer-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.firefly-side-model-select {
+    gap: 8px;
+}
+
+.firefly-side-model-select span {
+    color: var(--text-tertiary);
+}
+
+.firefly-side-model-select select {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-side-composer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.firefly-side-primary-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.firefly-side-primary-btn {
+    background: linear-gradient(135deg, var(--primary), #2b97ff);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(0, 102, 204, 0.22);
+}
+
+.firefly-side-primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+@media (max-width: 960px) {
+    .firefly-side-panel {
+        top: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: min(100vw - 24px, 420px);
+        padding: 16px;
+    }
+
+    .firefly-side-launcher {
+        right: 14px;
+    }
+
+    .firefly-side-launcher.open {
+        right: min(100vw - 78px, 360px);
+    }
+
+    .firefly-side-header,
+    .firefly-side-composer-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .firefly-side-header-actions,
+    .firefly-side-composer-actions {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+    }
+
+    .firefly-side-message-body {
+        max-width: 100%;
+    }
+}

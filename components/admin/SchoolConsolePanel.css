@@ -1,0 +1,315 @@
+.school-console {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.school-console-hero,
+.school-console-panel,
+.school-console-stat {
+    border-radius: 24px;
+}
+
+.school-console-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px;
+}
+
+.school-console-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.school-console-hero h2 {
+    margin-top: 10px;
+    color: var(--text-primary);
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.school-console-hero p {
+    margin-top: 10px;
+    max-width: 860px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.school-console-save {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.school-console-overview {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.school-console-stat {
+    padding: 18px;
+}
+
+.school-console-stat small,
+.school-console-role-copy small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.school-console-stat strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 28px;
+}
+
+.school-console-stat span {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.school-console-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.school-console-grid-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.school-console-panel {
+    padding: 18px;
+}
+
+.school-console-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.school-console-head h3 {
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+.school-console-head small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.school-console-form,
+.school-console-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.school-console-field,
+.school-console-role-copy,
+.school-console-role-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.school-console-field span,
+.school-console-role-editor span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.school-console-field input,
+.school-console-field select,
+.school-console-row input,
+.school-console-row select,
+.school-console-card textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+}
+
+.school-console-card textarea {
+    min-height: 84px;
+    padding: 12px 14px;
+    resize: vertical;
+}
+
+.school-console-toggle-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.school-console-toggle-card,
+.school-console-switch {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(17, 24, 39, 0.06);
+    background: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+    text-align: left;
+}
+
+.school-console-toggle-card.active,
+.school-console-switch.active,
+.school-console-inline.active,
+.school-console-pill.active,
+.school-console-role-badge.active {
+    border-color: rgba(0, 102, 204, 0.14);
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+}
+
+.school-console-toggle-card strong,
+.school-console-card strong,
+.school-console-switch strong {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.school-console-toggle-card small,
+.school-console-card small,
+.school-console-switch span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.school-console-toggle-card span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.school-console-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(17, 24, 39, 0.05);
+}
+
+.school-console-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.school-console-inline,
+.school-console-danger {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.school-console-danger {
+    color: #c44939;
+}
+
+.school-console-pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.school-console-pill,
+.school-console-role-badge {
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.school-console-pill:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.school-console-switch-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.school-console-switch {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+@media (max-width: 1180px) {
+    .school-console-overview,
+    .school-console-grid-two {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 780px) {
+    .school-console-hero {
+        flex-direction: column;
+    }
+
+    .school-console-overview,
+    .school-console-grid-two,
+    .school-console-toggle-list,
+    .school-console-switch-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .school-console-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
