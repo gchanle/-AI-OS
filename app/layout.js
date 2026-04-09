@@ -1,6 +1,6 @@
 import { Geist } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import AppShell from "@/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,10 +21,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="zh-CN">
       <body className={geistSans.variable}>
-        <Navbar />
-        <main style={{ marginTop: 'var(--navbar-height)' }}>
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

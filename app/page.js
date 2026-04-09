@@ -5,6 +5,11 @@ import LeftSidebar from '@/components/LeftSidebar';
 import ChatArea from '@/components/ChatArea';
 import RightSidebar from '@/components/RightSidebar';
 import {
+  buildAdminWorkspaceBootstrap,
+  loadAdminConsoleSettings,
+  subscribeAdminConsoleSettings,
+} from '@/data/adminConsole';
+import {
   consumeFireflyHandoffRequest,
   loadWorkspacePrefs,
   saveWorkspacePrefs,
@@ -16,6 +21,12 @@ import {
   defaultChatModelId,
   sortCapabilityIds,
 } from '@/data/workspace';
+import {
+  ensureCampusUserProfile,
+  loadCampusUserProfile,
+  subscribeCampusUserProfile,
+} from '@/data/userProfile';
+import { upsertCampusPreferenceMemory } from '@/data/fireflyMemory';
 import './home.css';
 
 const DASHBOARD_SECTION_ORDER = ['paths', 'modules', 'continuity', 'templates'];
@@ -36,23 +47,40 @@ export default function Home() {
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
   const [dashboardSections, setDashboardSections] = useState(DEFAULT_DASHBOARD_SECTIONS);
+  const [launchRuntimeContext, setLaunchRuntimeContext] = useState(null);
+  const [launchThreadKey, setLaunchThreadKey] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => loadCampusUserProfile());
+  const [enabledCapabilityIds, setEnabledCapabilityIds] = useState(() => buildAdminWorkspaceBootstrap().enabledCapabilityIds);
 
   useEffect(() => {
+    const ensuredProfile = ensureCampusUserProfile();
+    setUserProfile(ensuredProfile);
+    const adminBootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), ensuredProfile);
     const parsedPrefs = loadWorkspacePrefs();
+    setEnabledCapabilityIds(adminBootstrap.enabledCapabilityIds);
+
     if (Array.isArray(parsedPrefs.capabilityIds) && parsedPrefs.capabilityIds.length > 0) {
-      setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds));
+      setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds.filter((item) => adminBootstrap.enabledCapabilityIds.includes(item))));
+    } else if (adminBootstrap.capabilityIds.length > 0) {
+      setSelectedCapabilityIds(sortCapabilityIds(adminBootstrap.capabilityIds));
     }
     if (parsedPrefs.modelId) {
       setPreferredModelId(parsedPrefs.modelId);
+    } else if (adminBootstrap.modelId) {
+      setPreferredModelId(adminBootstrap.modelId);
     }
     if (parsedPrefs.workspaceMode) {
       setWorkspaceMode(parsedPrefs.workspaceMode);
     }
     if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
       setWebSearchEnabled(parsedPrefs.webSearchEnabled);
+    } else {
+      setWebSearchEnabled(Boolean(adminBootstrap.webSearchEnabled));
     }
     if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
       setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
+    } else {
+      setDeepResearchEnabled(Boolean(adminBootstrap.deepResearchEnabled));
     }
     if (Array.isArray(parsedPrefs.dashboardSections) && parsedPrefs.dashboardSections.length > 0) {
       const storedSections = DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item));
@@ -74,6 +102,31 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => subscribeAdminConsoleSettings((settings) => {
+    const bootstrap = buildAdminWorkspaceBootstrap(settings, userProfile);
+    setEnabledCapabilityIds(bootstrap.enabledCapabilityIds);
+    setSelectedCapabilityIds((prev) => {
+      const filtered = prev.filter((item) => bootstrap.enabledCapabilityIds.includes(item));
+      if (filtered.length > 0) {
+        return sortCapabilityIds(filtered);
+      }
+      return sortCapabilityIds(bootstrap.capabilityIds);
+    });
+  }), [userProfile]);
+
+  useEffect(() => subscribeCampusUserProfile((profile) => {
+    setUserProfile(profile);
+    const bootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), profile);
+    setEnabledCapabilityIds(bootstrap.enabledCapabilityIds);
+    setSelectedCapabilityIds((prev) => {
+      const filtered = prev.filter((item) => bootstrap.enabledCapabilityIds.includes(item));
+      if (filtered.length > 0) {
+        return sortCapabilityIds(filtered);
+      }
+      return sortCapabilityIds(bootstrap.capabilityIds);
+    });
+  }), []);
+
   useEffect(() => {
     saveWorkspacePrefs({
       capabilityIds: selectedCapabilityIds,
@@ -82,6 +135,16 @@ export default function Home() {
       webSearchEnabled,
       deepResearchEnabled,
       dashboardSections,
+    });
+    const profile = loadCampusUserProfile();
+    upsertCampusPreferenceMemory({
+      uid: profile.uid,
+      fid: profile.fid,
+      preferredModelId,
+      capabilityIds: selectedCapabilityIds,
+      workspaceMode,
+      webSearchEnabled,
+      deepResearchEnabled,
     });
   }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled, dashboardSections]);
 
@@ -124,7 +187,13 @@ export default function Home() {
     sessionStorage.removeItem('current_sid');
   }, []);
 
-  const handleStartChat = (message) => {
+  const handleStartChat = (message, options = {}) => {
+    if (Array.isArray(options.capabilityIds) && options.capabilityIds.length > 0) {
+      setSelectedCapabilityIds(sortCapabilityIds(options.capabilityIds.filter((item) => enabledCapabilityIds.includes(item))));
+    }
+
+    setLaunchRuntimeContext(options.runtimeContext || null);
+    setLaunchThreadKey(options.threadKey || null);
     setInitialMessage(message);
     setChatStarted(true);
     setCurrentSessionId(null);
@@ -132,6 +201,8 @@ export default function Home() {
 
   const handleSelectSession = (sessionId) => {
     setCurrentSessionId(sessionId);
+    setLaunchRuntimeContext(null);
+    setLaunchThreadKey(null);
     setChatStarted(true);
     if (typeof window !== 'undefined') {
         sessionStorage.setItem('current_sid', sessionId);
@@ -142,12 +213,18 @@ export default function Home() {
     setChatStarted(false);
     setInitialMessage('');
     setCurrentSessionId(null);
+    setLaunchRuntimeContext(null);
+    setLaunchThreadKey(null);
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem('current_sid');
     }
   };
 
   const handleToggleCapability = (capabilityId) => {
+    if (!enabledCapabilityIds.includes(capabilityId)) {
+      return;
+    }
+
     setSelectedCapabilityIds((prev) => {
       if (prev.includes(capabilityId)) {
         if (prev.length === 1) return prev;
@@ -206,7 +283,7 @@ export default function Home() {
         {!chatStarted ? (
           <LandingView
             onStartChat={handleStartChat}
-            capabilities={campusCapabilities}
+            capabilities={campusCapabilities.filter((item) => enabledCapabilityIds.includes(item.id))}
             selectedCapabilityIds={selectedCapabilityIds}
             onToggleCapability={handleToggleCapability}
             availableModels={availableModels}
@@ -234,6 +311,8 @@ export default function Home() {
             deepResearchEnabled={deepResearchEnabled}
             onWebSearchChange={setWebSearchEnabled}
             onDeepResearchChange={setDeepResearchEnabled}
+            initialRuntimeContext={launchRuntimeContext}
+            initialThreadKey={launchThreadKey}
           />
         )}
       </div>

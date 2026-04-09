@@ -10,8 +10,13 @@ import {
     markAllMessagesRead,
     markMessageRead,
     requestOpenFireflyAction,
+    syncStudyNoticeMessages,
     subscribeMessageCenter,
 } from '@/data/messageCenter';
+import {
+    ensureCampusUserProfile,
+    subscribeCampusUserProfile,
+} from '@/data/userProfile';
 import './GlobalMessageCenter.css';
 
 export default function GlobalMessageCenter() {
@@ -19,6 +24,7 @@ export default function GlobalMessageCenter() {
     const [isOpen, setIsOpen] = useState(false);
     const [items, setItems] = useState(() => buildSeedMessages());
     const [toasts, setToasts] = useState([]);
+    const [userProfile, setUserProfile] = useState(() => ensureCampusUserProfile());
 
     const unreadCount = useMemo(
         () => items.filter((item) => !item.read).length,
@@ -29,6 +35,33 @@ export default function GlobalMessageCenter() {
         setItems(loadMessageCenterItems());
         return subscribeMessageCenter(setItems);
     }, []);
+
+    useEffect(() => subscribeCampusUserProfile(setUserProfile), []);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const syncMessages = async () => {
+            try {
+                await syncStudyNoticeMessages({
+                    uid: userProfile.uid,
+                    fid: userProfile.fid,
+                });
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Failed to sync study notice messages:', error);
+                }
+            }
+        };
+
+        syncMessages();
+        const timer = window.setInterval(syncMessages, 3 * 60 * 1000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [userProfile.fid, userProfile.uid]);
 
     useEffect(() => {
         if (!isOpen) {

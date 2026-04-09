@@ -1,0 +1,43 @@
+.admin-access-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.admin-access-tabs {
+    padding: 14px;
+    border-radius: 22px;
+}
+
+.admin-access-tab-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.admin-access-tab {
+    min-height: 36px;
+    padding: 0 14px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-access-tab.active {
+    color: var(--primary);
+    background: rgba(0, 102, 204, 0.08);
+}
+
+.admin-access-tabs p {
+    margin-top: 12px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}

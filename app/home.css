@@ -61,7 +61,13 @@
 }
 
 .home-layout.chat-mode .main-content {
+    padding-top: 52px;
+    box-sizing: border-box;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08));
+}
+
+.home-layout.chat-mode .workspace-mode-switch {
+    top: 10px;
 }
 
 .home-layout.workspace-minimal {

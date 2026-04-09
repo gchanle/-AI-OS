@@ -186,6 +186,55 @@ export function addMessageCenterItem(item) {
     return nextItem;
 }
 
+export function mergeMessageCenterItems(items = []) {
+    const current = loadMessageCenterItems();
+    const currentMap = new Map(current.map((item) => [item.id, item]));
+    const nextIncoming = items.map((item) => {
+        const normalized = normalizeMessage(item);
+        const existing = currentMap.get(normalized.id);
+
+        return existing
+            ? {
+                ...normalized,
+                read: existing.read,
+            }
+            : normalized;
+    });
+    const preserved = current.filter((item) => !nextIncoming.some((entry) => entry.id === item.id));
+    const next = [...nextIncoming, ...preserved];
+
+    saveMessageCenterItems(next);
+    return next;
+}
+
+export async function syncStudyNoticeMessages(options = {}) {
+    if (!canUseStorage()) {
+        return [];
+    }
+
+    const params = new URLSearchParams();
+    if (options.uid) {
+        params.set('uid', options.uid);
+    }
+    if (options.fid) {
+        params.set('fid', options.fid);
+    }
+
+    const requestUrl = `/api/messages/study-unread${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetch(requestUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: options.uid ? { 'x-campus-user-uid': options.uid } : undefined,
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Failed to sync study notice messages.');
+    }
+
+    return mergeMessageCenterItems(Array.isArray(payload.items) ? payload.items : []);
+}
+
 export function markMessageRead(id, read = true) {
     const next = loadMessageCenterItems().map((item) => (
         item.id === id ? { ...item, read } : item
@@ -254,6 +303,15 @@ export function formatMessageTime(value, withDate = false) {
 
 export function requestOpenFireflyAction(item) {
     if (!canUseStorage()) {
+        return;
+    }
+
+    const href = item?.href || '';
+    const pathname = item?.pathname || '';
+    const isExternal = /^https?:\/\//.test(href) || /^https?:\/\//.test(pathname);
+
+    if (isExternal && !item?.target) {
+        window.open(href || pathname, '_blank', 'noopener,noreferrer');
         return;
     }
 

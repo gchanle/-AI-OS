@@ -133,6 +133,8 @@ function buildLibraryContextMessage(snapshot, question) {
         `当前页内容：${snapshot.pageBody}`,
         snapshot.noteContent ? `当前笔记内容：${snapshot.noteContent}` : '',
         `图书概要：${snapshot.bookSummary}`,
+        snapshot.unreadSummary ? `未读消息摘要：${snapshot.unreadSummary}` : '',
+        snapshot.approvalSummary ? `审批摘要：${snapshot.approvalSummary}` : '',
         `用户问题：${question}`,
         '请优先解释、梳理和推进当前阅读/笔记任务，再给继续阅读、记笔记或延伸阅读建议，语气克制、清晰、专业。',
     ].filter(Boolean).join('\n');

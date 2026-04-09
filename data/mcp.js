@@ -107,7 +107,7 @@ const baseMcpCatalog = [
         provider: '超星',
         owner: '平台消息中心',
         status: 'design',
-        capabilityId: 'services',
+        capabilityId: 'messages',
         transport: 'sse',
         protocolVersion: '2026-03-01',
         endpoint: '',

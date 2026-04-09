@@ -328,8 +328,21 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ls-task-copy {
     flex: 1;
+    min-width: 0;
     margin-right: 8px;
+}
+
+.ls-task-meta-line {
+    margin-top: 3px;
+    font-size: 10px;
+    color: var(--text-tertiary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -364,6 +377,11 @@
 .ls-task-status.completed {
     color: var(--accent-green);
     background: rgba(52, 199, 89, 0.1);
+}
+
+.ls-task-status.failed {
+    color: #d84b4b;
+    background: rgba(216, 75, 75, 0.12);
 }
 
 .ls-task-bar-bg {

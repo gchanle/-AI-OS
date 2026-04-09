@@ -649,9 +649,9 @@ export default function ConnectorCenter({ initialConnectorId = null }) {
             <div className="connector-page-shell">
                 <header className="connector-console-head glass-strong">
                     <div className="connector-console-copy">
-                        <span className="connector-kicker">连接器授权中心</span>
+                        <span className="connector-kicker">连接器管理台</span>
                         <h1>校内外系统接入管理台</h1>
-                        <p>从这里统一管理接入台账、抽屉编辑、凭证引用、授权方式和调试记录，而不是只挂一个外链入口。这里是“系统接入层”的详细台账，而更上层的能力封装、审核和萤火虫调用治理则统一收进能力接入中心。</p>
+                        <p>这里不是介绍页，而是系统接入的运维台账。你可以在这里登记连接器、补入口和凭证、确定授权方式、做联调巡检，并把真正可调用的能力交给上层的 Skills、MCP 或萤火虫去编排。</p>
                     </div>
                     <div className="connector-console-actions">
                         <Link href="/connectors" className="connector-inline-link">能力接入中心</Link>
@@ -823,6 +823,38 @@ export default function ConnectorCenter({ initialConnectorId = null }) {
                                     </button>
                                 </div>
                             </div>
+
+                            <section className="connector-detail-overview glass">
+                                <div className="connector-detail-overview-head">
+                                    <div>
+                                        <span className="connector-section-kicker">当前连接器</span>
+                                        <h3>先明确这条接入记录现在负责什么</h3>
+                                    </div>
+                                    <p>下面四块就是这条连接器最关键的运行信息，避免进入详情后只看到一堆模块却不知道当前重点。</p>
+                                </div>
+                                <div className="connector-overview-grid">
+                                    <article className="connector-overview-card">
+                                        <span>主要职责</span>
+                                        <strong>{selectedConnector.summary}</strong>
+                                        <p>该连接器当前归属于「{capabilityLabelMap[selectedConnector.primaryCapabilityId] || selectedConnector.primaryCapabilityId}」，会作为对应能力的系统入口之一。</p>
+                                    </article>
+                                    <article className="connector-overview-card">
+                                        <span>默认授权</span>
+                                        <strong>{selectedAuthMode?.label || '尚未设定'}</strong>
+                                        <p>{selectedAuthMode?.detail || '建议先确认统一认证、浏览器会话或客户侧代理这三类路径中的默认方式。'}</p>
+                                    </article>
+                                    <article className="connector-overview-card">
+                                        <span>凭证与入口</span>
+                                        <strong>{selectedConnector.runtimeConfig.vaultRef || '未绑定凭证引用'}</strong>
+                                        <p>{selectedConnector.runtimeConfig.openUrl || '尚未填写入口地址，后续联调会缺少起点。'} </p>
+                                    </article>
+                                    <article className="connector-overview-card">
+                                        <span>可调度状态</span>
+                                        <strong>{selectedConnector.authorized ? '已可被萤火虫调度' : '当前不参与自动调度'}</strong>
+                                        <p>{selectedConnector.authorized ? '已经可以进入调用链路，下一步重点是把能力封装得更稳定。' : '先完成授权、巡检和范围约束，再交给上层能力去调用。'}</p>
+                                    </article>
+                                </div>
+                            </section>
 
                             <div className="connector-tab-row">
                                 {connectorTabs.map((tab) => (

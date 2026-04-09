@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import ExternalOpenModeControl from '@/components/ExternalOpenModeControl';
 import FireflySideDrawer from '@/components/FireflySideDrawer';
 import { buildFireflyHandoffHref } from '@/data/campusPlatform';
@@ -18,6 +19,8 @@ function buildExternalContextMessage(snapshot, question) {
         `当前页面：${snapshot.activeTabLabel}`,
         snapshot.pageUrl ? `页面链接：${snapshot.pageUrl}` : '',
         snapshot.openModeLabel ? `打开方式：${snapshot.openModeLabel}` : '',
+        snapshot.unreadSummary ? `未读消息摘要：${snapshot.unreadSummary}` : '',
+        snapshot.approvalSummary ? `审批摘要：${snapshot.approvalSummary}` : '',
         `用户问题：${question}`,
         '请优先给出适合当前入口的理解、操作路径、风险提醒或下一步建议，不要假装已经读取到 iframe 内的实时页面细节。',
     ].filter(Boolean).join('\n');
@@ -53,6 +56,7 @@ export default function ExternalWorkspaceShell({
     extraControlSections = [],
     capabilityIds = [],
 }) {
+    const pathname = usePathname();
     const initialTab = useMemo(() => navItems[0] || null, [navItems]);
     const loadedTabsStorageKey = useMemo(() => `external_loaded_tabs:${storageKey || title}`, [storageKey, title]);
     const drawerStorageNamespace = useMemo(() => `external_drawer:${storageKey || title}`, [storageKey, title]);
@@ -67,8 +71,12 @@ export default function ExternalWorkspaceShell({
     const [isFireflyDrawerOpen, setIsFireflyDrawerOpen] = useState(false);
 
     useEffect(() => {
-        setActiveTab(initialTab);
-    }, [initialTab]);
+        const tabId = typeof window !== 'undefined'
+            ? new URL(window.location.href).searchParams.get('tab')
+            : null;
+        const matched = tabId ? navItems.find((item) => item.id === tabId) : null;
+        setActiveTab(matched || initialTab);
+    }, [initialTab, navItems, pathname]);
 
     useEffect(() => {
         setIsFireflyDrawerOpen(false);
@@ -151,6 +159,13 @@ export default function ExternalWorkspaceShell({
         setDismissedLoadingIds((prev) => prev.filter((id) => id !== tab.id));
         setIsLoading(!loadedTabIds.includes(tab.id));
         setActiveTab(tab);
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab.id);
+            window.history.replaceState({}, '', url.toString());
+        } catch {
+            // ignore URL sync failures
+        }
     };
 
     const dismissLoadingBanner = () => {
@@ -171,9 +186,13 @@ export default function ExternalWorkspaceShell({
     const drawerContextSnapshot = useMemo(() => ({
         workspaceTitle: title,
         activeTabLabel: activeTab?.label || title,
+        activeTabId: activeTab?.id || '',
         pageUrl: activeTab?.url || '',
         openModeLabel: OPEN_MODE_LABELS[openMode],
-    }), [activeTab, openMode, title]);
+        pathname,
+        drawerTarget: drawerStorageNamespace,
+        historyOrigin,
+    }), [activeTab, drawerStorageNamespace, historyOrigin, openMode, pathname, title]);
     const drawerContextChips = [
         title,
         activeTab?.label || null,
@@ -269,6 +288,33 @@ export default function ExternalWorkspaceShell({
             <section className="external-content">
                 {!showOpenHint && (
                     <div className="external-floating-controls">
+                        <button
+                            type="button"
+                            className={`external-firefly-btn ${isFireflyDrawerOpen ? 'active' : ''}`}
+                            onClick={() => setIsFireflyDrawerOpen((prev) => !prev)}
+                            aria-expanded={isFireflyDrawerOpen}
+                            aria-label={isFireflyDrawerOpen ? '收起萤火虫抽屉' : '打开萤火虫抽屉'}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M4 7h16v10H7l-3 3V7z" />
+                            </svg>
+                            <span>{isFireflyDrawerOpen ? '收起萤火虫' : '萤火虫'}</span>
+                        </button>
+                        {openMode === 'embed' && (
+                            <button
+                                type="button"
+                                className="external-back-btn"
+                                onClick={() => {
+                                    if (window.history.length > 1) {
+                                        window.history.back();
+                                    } else {
+                                        window.location.href = '/';
+                                    }
+                                }}
+                            >
+                                返回工作台
+                            </button>
+                        )}
                         <ExternalOpenModeControl
                             value={openMode}
                             onChange={persistMode}

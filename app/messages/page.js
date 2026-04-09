@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { buildMessageSourceTabs } from '@/data/campusPlatform';
 import {
@@ -18,9 +19,11 @@ const statusTabs = [
 ];
 
 export default function MessagesPage() {
+    const router = useRouter();
     const [items, setItems] = useState(() => loadMessageCenterItems({ preferStorage: false }));
     const [statusFilter, setStatusFilter] = useState('all');
     const [sourceFilter, setSourceFilter] = useState('all');
+    const isExternalLink = (href) => /^https?:\/\//.test(href || '');
 
     useEffect(() => {
         setItems(loadMessageCenterItems());
@@ -43,6 +46,10 @@ export default function MessagesPage() {
     );
 
     const unreadCount = items.filter((item) => !item.read).length;
+    const openMessageDetail = (itemId) => {
+        markMessageRead(itemId, true);
+        router.push(`/messages/${encodeURIComponent(itemId)}`);
+    };
 
     return (
         <div className="message-page">
@@ -105,35 +112,68 @@ export default function MessagesPage() {
                         </div>
                     ) : (
                         filteredItems.map((item) => (
-                            <article key={item.id} className={`message-list-card glass ${item.read ? '' : 'unread'}`}>
-                                <Link
-                                    href={`/messages/${encodeURIComponent(item.id)}`}
-                                    className="message-list-card-link"
-                                    onClick={() => markMessageRead(item.id, true)}
-                                >
-                                    <div className="message-list-card-top">
+                            <article
+                                key={item.id}
+                                className={`message-list-card glass ${item.read ? '' : 'unread'}`}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => openMessageDetail(item.id)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        openMessageDetail(item.id);
+                                    }
+                                }}
+                            >
+                                <div className="message-list-card-head">
+                                    <div className="message-list-card-title-row">
                                         <span className={`message-center-source ${item.sourceId}`}>{item.sourceLabel}</span>
-                                        <div className="message-list-card-meta">
-                                            <span className={`message-center-status ${item.read ? 'read' : 'unread'}`}>
-                                                {item.read ? '已读' : '未读'}
-                                            </span>
-                                            <small>{formatMessageTime(item.createdAt, true)}</small>
-                                        </div>
+                                        <h2>{item.title}</h2>
                                     </div>
-                                    <h2>{item.title}</h2>
-                                    <p>{item.body}</p>
-                                </Link>
-                                <div className="message-list-card-actions">
-                                    <Link href={`/messages/${encodeURIComponent(item.id)}`} className="message-inline-link">
-                                        查看详情
-                                    </Link>
+                                    <div className="message-list-card-meta">
+                                        <span className={`message-center-status ${item.read ? 'read' : 'unread'}`}>
+                                            {item.read ? '已读' : '未读'}
+                                        </span>
+                                        <small>{formatMessageTime(item.createdAt, true)}</small>
+                                    </div>
                                     <button
                                         type="button"
-                                        className="message-inline-btn"
-                                        onClick={() => markMessageRead(item.id, !item.read)}
+                                        className="message-list-toggle"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            markMessageRead(item.id, !item.read);
+                                        }}
                                     >
                                         {item.read ? '标记未读' : '标记已读'}
                                     </button>
+                                </div>
+                                <div className="message-list-card-link">
+                                    <p>{item.body}</p>
+                                </div>
+                                <div className="message-list-card-footer">
+                                    <div className="message-list-card-links">
+                                        <button
+                                            type="button"
+                                            className="message-inline-link"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                openMessageDetail(item.id);
+                                            }}
+                                        >
+                                            查看详情
+                                        </button>
+                                        {isExternalLink(item.href) && (
+                                            <a
+                                                href={item.href}
+                                                className="message-inline-link"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(event) => event.stopPropagation()}
+                                            >
+                                                原文
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </article>
                         ))

@@ -322,6 +322,9 @@
     top: 16px;
     right: 18px;
     z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .external-open-hint {
@@ -338,6 +341,47 @@
     color: var(--text-secondary);
     font-size: 12px;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.external-firefly-btn,
+.external-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.external-firefly-btn {
+    gap: 8px;
+    color: var(--primary);
+    border-color: rgba(0, 102, 204, 0.16);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.external-firefly-btn.active {
+    background: rgba(0, 102, 204, 0.1);
+    border-color: rgba(0, 102, 204, 0.24);
+}
+
+.external-firefly-btn span {
+    white-space: nowrap;
+}
+
+.external-firefly-btn:hover,
+.external-back-btn:hover {
+    background: #fff;
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .external-open-hint button {

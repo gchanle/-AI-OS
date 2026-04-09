@@ -2,10 +2,115 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import TasksModal from './TasksModal';
 import { workflowActions } from '@/data/mock';
+import {
+    loadFireflyTasks,
+    patchFireflyTask,
+    removeFireflyTask,
+    subscribeFireflyTasks,
+} from '@/data/fireflyTasks';
+import {
+    buildFireflyMemorySnapshot,
+    touchFireflyMemory,
+} from '@/data/fireflyMemory';
+import { loadCampusUserProfile } from '@/data/userProfile';
 import { campusCapabilities } from '@/data/workspace';
 import './LeftSidebar.css';
 
 const LEFT_SIDEBAR_COLLAPSE_KEY = 'campus_left_sidebar_collapsed';
+
+function sortByRecent(items = []) {
+    return [...items].sort(
+        (left, right) => new Date(right.updatedAt || right.createdAt || 0).getTime()
+            - new Date(left.updatedAt || left.createdAt || 0).getTime()
+    );
+}
+
+function mapLegacyTask(task = {}, fallbackCreatedAt = null) {
+    return {
+        ...task,
+        rawId: task.id,
+        taskKind: 'legacy',
+        sourceLabel: '聊天任务',
+        status: task.status || 'in-progress',
+        createdAt: task.createdAt || fallbackCreatedAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || task.createdAt || fallbackCreatedAt || new Date().toISOString(),
+        progress: Number(task.progress || 0),
+    };
+}
+
+function mapFireflyTask(task = {}) {
+    const steps = Array.isArray(task.steps) ? task.steps : [];
+    const completedSteps = steps.filter((step) => step.status === 'completed').length;
+    const progress = steps.length > 0
+        ? Math.max(
+            task.status === 'running' || task.status === 'planning' ? 16 : 0,
+            Math.round((completedSteps / steps.length) * 100)
+        )
+        : (task.status === 'completed' ? 100 : 40);
+
+    return {
+        id: `firefly:${task.id}`,
+        rawId: task.id,
+        title: task.title || '萤火虫任务',
+        taskKind: 'firefly',
+        sourceLabel: task.uiContext?.surfaceLabel || '萤火虫',
+        status: task.status === 'completed'
+            ? 'completed'
+            : task.status === 'failed'
+                ? 'failed'
+                : 'in-progress',
+        progress: task.status === 'completed' ? 100 : progress,
+        createdAt: task.createdAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || task.createdAt || new Date().toISOString(),
+        capabilityIds: Array.isArray(task.capabilityIds) ? task.capabilityIds : [],
+        resultSummary: task.resultSummary || '',
+        goal: task.goal || '',
+        uiContext: task.uiContext || {},
+        memoryIds: Array.isArray(task.memoryIds) ? task.memoryIds : [],
+        resumeContext: task.resumeContext || {},
+        steps,
+        selectedSkillLabels: Array.isArray(task.selectedSkillLabels) ? task.selectedSkillLabels : [],
+    };
+}
+
+function buildFireflyContinuePrompt(task = {}) {
+    const lines = [
+        `继续帮我推进这项任务：「${task.title || '萤火虫任务'}」。`,
+    ];
+
+    if (task.goal) {
+        lines.push(`原始目标：${task.goal}`);
+    }
+
+    if (task.sourceLabel) {
+        lines.push(`任务来源：${task.sourceLabel}`);
+    }
+
+    if (task.resultSummary) {
+        lines.push(`当前结果摘要：${task.resultSummary}`);
+    } else if (task.status === 'in-progress') {
+        lines.push('当前状态：任务还在推进中，请先基于已有上下文判断最值得继续的下一步。');
+    } else if (task.status === 'failed') {
+        lines.push('当前状态：上一次执行失败，请先判断失败点和更稳妥的继续方式。');
+    }
+
+    lines.push('请先给我一个简短判断：接下来最值得做什么；然后把下一步拆成最多 3 条可执行动作。');
+
+    return lines.join('\n');
+}
+
+function getTaskStatusLabel(task = {}) {
+    if (task.status === 'completed') {
+        return '已完成';
+    }
+    if (task.status === 'failed') {
+        return '失败';
+    }
+    if (task.status === 'stopped') {
+        return '已停止';
+    }
+    return '进行中';
+}
 
 export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'classic', onQuickStart }) {
     const [collapsed, setCollapsed] = useState(false);
@@ -43,17 +148,82 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
         }
     }, [collapsed]);
 
-    const handleDeleteTask = (taskId) => {
-        const newTasks = tasks.filter(t => t.id !== taskId);
-        setTasks(newTasks);
-        localStorage.setItem('dynamic_tasks', JSON.stringify(newTasks));
+    const handleDeleteTask = (task) => {
+        if (task?.taskKind === 'firefly') {
+            removeFireflyTask(task.rawId);
+            return;
+        }
+
+        const newTasks = tasks
+            .filter((item) => item.id !== task?.id)
+            .filter((item) => item.taskKind !== 'firefly');
+        const legacyTasks = newTasks.map(({ taskKind, rawId, sourceLabel, ...item }) => item);
+        setTasks(sortByRecent([...newTasks, ...loadFireflyTasks().map(mapFireflyTask)]));
+        localStorage.setItem('dynamic_tasks', JSON.stringify(legacyTasks));
+        window.dispatchEvent(new Event('tasks-updated'));
     };
 
-    const handleSaveEdit = (taskId) => {
-        const newTasks = tasks.map(t => t.id === taskId ? { ...t, title: editingTitle } : t);
+    const handleSaveEdit = (task) => {
+        if (!task) {
+            return;
+        }
+
+        if (task.taskKind === 'firefly') {
+            patchFireflyTask(task.rawId, { title: editingTitle });
+            setEditingTaskId(null);
+            return;
+        }
+
+        const newTasks = tasks.map((item) => (
+            item.id === task.id ? { ...item, title: editingTitle } : item
+        ));
+        const legacyTasks = newTasks
+            .filter((item) => item.taskKind !== 'firefly')
+            .map(({ taskKind, rawId, sourceLabel, ...item }) => item);
         setTasks(newTasks);
-        localStorage.setItem('dynamic_tasks', JSON.stringify(newTasks));
+        localStorage.setItem('dynamic_tasks', JSON.stringify(legacyTasks));
+        window.dispatchEvent(new Event('tasks-updated'));
         setEditingTaskId(null);
+    };
+
+    const handleOpenTask = (task) => {
+        if (!task) {
+            return;
+        }
+
+        if (task.taskKind === 'firefly') {
+            const profile = loadCampusUserProfile();
+            const memorySnapshot = buildFireflyMemorySnapshot({
+                uid: profile.uid,
+                capabilityIds: task.capabilityIds || [],
+                question: `${task.title} ${task.goal || ''}`,
+                limit: 3,
+            });
+            touchFireflyMemory(task.memoryIds || []);
+            onQuickStart?.(
+                buildFireflyContinuePrompt(task),
+                {
+                    capabilityIds: task.capabilityIds || [],
+                    runtimeContext: {
+                        ...(task.resumeContext || {}),
+                        resumeMode: true,
+                        parentTaskId: task.rawId,
+                        taskTitle: task.title,
+                        taskGoal: task.goal,
+                        taskResultSummary: task.resultSummary,
+                        taskMemorySummary: memorySnapshot.markdown,
+                        memoryIds: task.memoryIds || [],
+                        taskSelectedSkills: task.selectedSkillLabels || [],
+                    },
+                    threadKey: task.uiContext?.drawerThreadKey || task.rawId,
+                }
+            );
+            return;
+        }
+
+        if (task.sessionId && onSelectSession) {
+            onSelectSession(task.sessionId);
+        }
     };
 
     useEffect(() => {
@@ -74,14 +244,12 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                 );
 
                 const storedTasks = JSON.parse(localStorage.getItem('dynamic_tasks') || '[]');
-                const normalizedTasks = Array.isArray(storedTasks)
-                    ? storedTasks.map((task) => ({
-                        ...task,
-                        createdAt: task.createdAt || sessionTimeMap[task.sessionId] || new Date().toISOString(),
-                    }))
+                const normalizedLegacyTasks = Array.isArray(storedTasks)
+                    ? storedTasks.map((task) => mapLegacyTask(task, sessionTimeMap[task.sessionId]))
                     : [];
+                const fireflyTasks = loadFireflyTasks().map(mapFireflyTask);
 
-                setTasks(normalizedTasks);
+                setTasks(sortByRecent([...normalizedLegacyTasks, ...fireflyTasks]));
                 setChats(normalizedChats);
                 window.clearTimeout(readyTimer);
                 readyTimer = window.setTimeout(() => setIsReady(true), 220);
@@ -93,10 +261,12 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
 
         window.addEventListener('tasks-updated', loadData);
         window.addEventListener('chat-history-updated', loadData);
+        const unsubscribeFireflyTasks = subscribeFireflyTasks(loadData);
         return () => {
             window.clearTimeout(readyTimer);
             window.removeEventListener('tasks-updated', loadData);
             window.removeEventListener('chat-history-updated', loadData);
+            unsubscribeFireflyTasks();
         };
     }, []);
 
@@ -223,6 +393,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
         return tasks.filter((task) => (
             task.title?.toLowerCase().includes(keyword)
             || (task.status || '').toLowerCase().includes(keyword)
+            || (task.sourceLabel || '').toLowerCase().includes(keyword)
         ));
     }, [tasks, minimalSearch]);
 
@@ -376,14 +547,10 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                                                 key={task.id || idx}
                                                 type="button"
                                                 className="ls-mini-card action"
-                                                onClick={() => {
-                                                    if (task.sessionId && onSelectSession) {
-                                                        onSelectSession(task.sessionId);
-                                                    }
-                                                }}
+                                                onClick={() => handleOpenTask(task)}
                                             >
                                                 <strong>{task.title}</strong>
-                                                <span>{task.status === 'completed' ? '已完成' : '进行中'}</span>
+                                                <span>{task.sourceLabel} · {getTaskStatusLabel(task)}</span>
                                             </button>
                                         )) : (
                                             <div className="ls-empty-text">当前没有匹配的任务</div>
@@ -464,8 +631,8 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                                 key={t.id || idx} 
                                 className={`ls-task ${!isManageMode ? 'clickable' : ''}`}
                                 onClick={() => {
-                                    if (!isManageMode && t.sessionId && onSelectSession) {
-                                        onSelectSession(t.sessionId);
+                                    if (!isManageMode) {
+                                        handleOpenTask(t);
                                     }
                                 }}
                             >
@@ -476,17 +643,20 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                                             type="text" 
                                             value={editingTitle} 
                                             onChange={e => setEditingTitle(e.target.value)}
-                                            onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(t.id); }}
+                                            onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(t); }}
                                             placeholder="按回车保存"
                                             className="ls-task-edit-input"
                                             onClick={e => e.stopPropagation()}
                                         />
                                     ) : (
-                                        <div className="ls-task-name">{t.title}</div>
+                                        <div className="ls-task-copy">
+                                            <div className="ls-task-name">{t.title}</div>
+                                            <div className="ls-task-meta-line">{t.sourceLabel}{t.resultSummary ? ` · ${t.resultSummary}` : ''}</div>
+                                        </div>
                                     )}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div className={`ls-task-status ${t.status}`}>
-                                            {t.status === 'completed' ? '已完成' : (t.status === 'stopped' ? '已停止' : '进行中')}
+                                            {getTaskStatusLabel(t)}
                                         </div>
                                         {isManageMode && (
                                             <div style={{ display: 'flex', gap: '4px' }}>
@@ -497,17 +667,19 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                                                 }} title="编辑名称" style={{ color: 'var(--primary)' }}>
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                                                 </button>
-                                                <button className="ls-task-del" onClick={(e) => { e.stopPropagation(); handleDeleteTask(t.id); }} title="移出">
+                                                <button className="ls-task-del" onClick={(e) => { e.stopPropagation(); handleDeleteTask(t); }} title="移出">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                                 </button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="ls-task-bar-bg">
-                                    <div className="ls-task-bar-fill" style={{ 
+                                    <div className="ls-task-bar-bg">
+                                        <div className="ls-task-bar-fill" style={{ 
                                         width: `${t.status === 'completed' ? 100 : (t.status === 'stopped' ? 0 : (t.progress > 0 ? t.progress : 40))}%`, 
-                                        background: t.status === 'completed' ? 'var(--accent-green)' : (t.status === 'stopped' ? 'var(--text-tertiary)' : 'var(--primary)') 
+                                        background: t.status === 'completed'
+                                            ? 'var(--accent-green)'
+                                            : (t.status === 'failed' ? '#ff7a7a' : (t.status === 'stopped' ? 'var(--text-tertiary)' : 'var(--primary)')) 
                                     }}></div>
                                 </div>
                             </div>
@@ -605,7 +777,7 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
                 tasks={tasks}
-                onSelectSession={onSelectSession}
+                onOpenTask={handleOpenTask}
                 onDeleteTask={handleDeleteTask}
                 onSaveEdit={handleSaveEdit}
                 editingTaskId={editingTaskId}

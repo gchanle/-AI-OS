@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { filterEnabledChatModels, loadAdminAgentRuntimeConfig } from '@/lib/adminAgentRuntimeStore';
 import {
   chatModelCandidates,
   defaultChatModelId,
@@ -49,9 +50,10 @@ async function probeModel(modelId) {
 }
 
 export async function GET() {
+  const agentConfig = loadAdminAgentRuntimeConfig();
   const probeCandidates = Array.from(
     new Map(
-      [...chatModelCandidates, ...loadEnvCandidates()].map((candidate) => [candidate.id, candidate])
+      filterEnabledChatModels([...chatModelCandidates, ...loadEnvCandidates()], agentConfig).map((candidate) => [candidate.id, candidate])
     ).values()
   );
 

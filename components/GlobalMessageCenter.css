@@ -192,6 +192,11 @@
     color: var(--primary);
 }
 
+.message-center-source.study {
+    background: rgba(39, 111, 240, 0.12);
+    color: #2455c3;
+}
+
 .message-center-source.business {
     background: rgba(255, 149, 0, 0.12);
     color: #d97a00;

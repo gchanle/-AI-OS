@@ -34,6 +34,7 @@ export const vaultKindMap = {
 
 export const capabilityLabelMap = {
     services: 'AI 办事',
+    messages: '消息中心',
     research: 'AI 科研',
     assistant: 'AI 助教',
     library: 'AI 图书馆',
@@ -159,7 +160,7 @@ const baseConnectorCatalog = [
         accessPath: '统一认证后进入 notice 列表，支持按未读和时间范围拉取。',
         owner: '学校门户',
         status: 'healthy',
-        primaryCapabilityId: 'services',
+        primaryCapabilityId: 'messages',
         preferredConnectorType: 'http',
         openUrl: 'https://notice.chaoxing.com/pc/notice/myNotice',
         connectionStrategy: '优先分析登录后真实接口；若接口受限，再退回已登录页面抓取。',

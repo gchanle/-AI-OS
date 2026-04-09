@@ -66,6 +66,7 @@
 .connector-field p,
 .connector-auth-card p,
 .connector-auth-card span,
+.connector-detail-overview-head p,
 .connector-step-item p,
 .connector-bullet-list,
 .connector-cell-main span,
@@ -80,6 +81,7 @@
 .connector-console-actions,
 .connector-filter-row,
 .connector-detail-head-actions,
+.connector-detail-overview-head,
 .connector-tab-row,
 .connector-result-meta,
 .connector-control-meta,
@@ -141,6 +143,56 @@
 .connector-panel {
     border-radius: 24px;
     padding: 16px;
+}
+
+.connector-detail-overview {
+    border-radius: 24px;
+    padding: 18px;
+}
+
+.connector-detail-overview-head {
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.connector-detail-overview-head h3 {
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.connector-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.connector-overview-card {
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.connector-overview-card span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.connector-overview-card strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.45;
+}
+
+.connector-overview-card p {
+    margin-top: 8px;
 }
 
 .connector-table-toolbar {
@@ -606,6 +658,7 @@
     .connector-control-bar,
     .connector-table-toolbar,
     .connector-detail-grid,
+    .connector-overview-grid,
     .connector-config-layout,
     .connector-authorization-layout,
     .connector-execution-layout,

@@ -1,0 +1,406 @@
+.admin-runtime {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.admin-runtime-hero,
+.admin-runtime-metric,
+.admin-runtime-panel {
+    border-radius: 24px;
+}
+
+.admin-runtime-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px;
+}
+
+.admin-runtime-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-runtime-hero h2 {
+    margin-top: 10px;
+    font-size: 30px;
+    color: var(--text-primary);
+}
+
+.admin-runtime-hero p,
+.admin-runtime-meta span {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.admin-runtime-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.admin-runtime-meta strong {
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.admin-runtime-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.admin-runtime-metric {
+    padding: 18px;
+}
+
+.admin-runtime-metric small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-runtime-metric strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 28px;
+    color: var(--text-primary);
+}
+
+.admin-runtime-metric span {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.admin-runtime-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.admin-runtime-panel {
+    padding: 18px;
+}
+
+.admin-runtime-panel-wide {
+    grid-column: 1 / -1;
+}
+
+.admin-runtime-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.admin-runtime-head h3 {
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+.admin-runtime-head small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-runtime-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-runtime-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(17, 24, 39, 0.05);
+}
+
+.admin-runtime-item strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.admin-runtime-item span {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.admin-runtime-item small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-runtime-task-button {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.admin-runtime-task-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(0, 102, 204, 0.14);
+}
+
+.admin-runtime-task-button.active {
+    border-color: rgba(0, 102, 204, 0.2);
+    background: rgba(0, 102, 204, 0.08);
+}
+
+.admin-runtime-detail,
+.admin-runtime-summary,
+.admin-runtime-block,
+.admin-runtime-subhead {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-runtime-detail {
+    gap: 14px;
+}
+
+.admin-runtime-summary {
+    gap: 12px;
+}
+
+.admin-runtime-highlight {
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(0, 102, 204, 0.08), rgba(255, 255, 255, 0.82));
+    border: 1px solid rgba(0, 102, 204, 0.1);
+}
+
+.admin-runtime-highlight strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--text-primary);
+    font-size: 18px;
+}
+
+.admin-runtime-highlight p {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.admin-runtime-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-runtime-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.05);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.admin-runtime-chip.danger {
+    background: rgba(220, 38, 38, 0.08);
+    color: #b91c1c;
+}
+
+.admin-runtime-chip.success {
+    background: rgba(22, 163, 74, 0.08);
+    color: #166534;
+}
+
+.admin-runtime-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-runtime-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-runtime-action.primary {
+    background: rgba(0, 102, 204, 0.1);
+    border-color: rgba(0, 102, 204, 0.18);
+    color: var(--primary);
+}
+
+.admin-runtime-action.success {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.16);
+    color: #166534;
+}
+
+.admin-runtime-action.danger {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.16);
+    color: #991b1b;
+}
+
+.admin-runtime-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.admin-runtime-feedback {
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.admin-runtime-feedback.success {
+    background: rgba(22, 163, 74, 0.08);
+    border: 1px solid rgba(22, 163, 74, 0.14);
+    color: #166534;
+}
+
+.admin-runtime-feedback.error {
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.14);
+    color: #991b1b;
+}
+
+.admin-runtime-inline-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.admin-runtime-inline-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-runtime-inline-action.success {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.16);
+    color: #166534;
+}
+
+.admin-runtime-inline-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.admin-runtime-stat-grid,
+.admin-runtime-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.admin-runtime-stat-grid-compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-runtime-stat-card {
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(17, 24, 39, 0.05);
+}
+
+.admin-runtime-stat-card small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-runtime-stat-card strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 15px;
+    word-break: break-word;
+}
+
+.admin-runtime-block {
+    gap: 10px;
+}
+
+.admin-runtime-subhead {
+    gap: 4px;
+}
+
+.admin-runtime-subhead h4 {
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.admin-runtime-subhead small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-runtime-empty {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.64);
+    border: 1px dashed rgba(17, 24, 39, 0.08);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+    .admin-runtime-metrics,
+    .admin-runtime-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-runtime-hero {
+        flex-direction: column;
+    }
+
+    .admin-runtime-stat-grid,
+    .admin-runtime-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-runtime-stat-grid-compact {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

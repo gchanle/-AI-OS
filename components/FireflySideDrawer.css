@@ -134,11 +134,20 @@
     gap: 14px;
 }
 
+.firefly-side-header.compact {
+    align-items: center;
+    gap: 12px;
+}
+
 .firefly-side-header-copy {
     display: flex;
     flex-direction: column;
     gap: 6px;
     min-width: 0;
+}
+
+.firefly-side-header.compact .firefly-side-header-copy {
+    gap: 2px;
 }
 
 .firefly-side-kicker {
@@ -161,6 +170,11 @@
     color: var(--text-primary);
     font-size: 20px;
     line-height: 1.2;
+}
+
+.firefly-side-header.compact .firefly-side-header-copy h3 {
+    font-size: 17px;
+    line-height: 1.25;
 }
 
 .firefly-side-header-copy p {
@@ -221,6 +235,28 @@
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
+}
+
+.firefly-side-collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.firefly-side-collapse-btn:hover {
+    color: var(--text-primary);
+    background: rgba(15, 23, 42, 0.06);
+    border-color: rgba(0, 102, 204, 0.14);
 }
 
 .firefly-side-chip-row,
@@ -306,11 +342,268 @@
     color: var(--text-primary);
 }
 
-.firefly-side-message-body p {
-    margin: 0;
-    white-space: pre-wrap;
+.firefly-side-inline-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.firefly-side-inline-link:hover {
+    text-decoration: underline;
+}
+
+.firefly-side-message-body .rich-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     font-size: 13px;
+}
+
+.firefly-side-message-body .rich-paragraph,
+.firefly-side-message-body .rich-quote,
+.firefly-side-message-body .rich-list,
+.firefly-side-message-body .rich-heading,
+.firefly-side-message-body .rich-code-block {
+    margin: 0;
+}
+
+.firefly-side-message-body .rich-heading {
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.firefly-side-message-body .rich-heading.level-1 {
+    font-size: 16px;
+}
+
+.firefly-side-message-body .rich-heading.level-2 {
+    font-size: 15px;
+}
+
+.firefly-side-message-body .rich-heading.level-3 {
+    font-size: 14px;
+}
+
+.firefly-side-message-body .rich-paragraph {
     line-height: 1.72;
+}
+
+.firefly-side-message-body .rich-list {
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.firefly-side-message-body .rich-inline-code {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.06);
+    font-size: 0.92em;
+}
+
+.firefly-side-message-body .rich-quote {
+    padding-left: 10px;
+    border-left: 3px solid rgba(0, 102, 204, 0.16);
+    color: var(--text-secondary);
+}
+
+.firefly-side-message-body .rich-code-block {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.92);
+    color: rgba(255, 255, 255, 0.94);
+    overflow-x: auto;
+    line-height: 1.62;
+}
+
+.firefly-side-message-body .rich-summary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-summary-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.firefly-side-message-body .rich-summary-title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-summary-title {
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.firefly-side-message-body .rich-summary-count {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.firefly-side-message-body .rich-summary-link {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 0 8px;
+    border-radius: 8px;
+    background: rgba(52, 199, 89, 0.12);
+    color: #1d8a43;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-badge.pending {
+    background: rgba(255, 149, 0, 0.14);
+    color: #d98300;
+}
+
+.firefly-side-message-body .rich-summary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.firefly-side-message-body .rich-summary-action {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-side-message-body .rich-summary-actions.inline {
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-summary-empty {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.firefly-side-message-body .rich-action-link-wrap {
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-action-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.firefly-side-message-body .rich-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 2px 0 6px;
+}
+
+.firefly-side-message-body .rich-subsection-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-subsection-title {
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.firefly-side-message-body .rich-subsection-count {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.firefly-side-message-body .rich-subsection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-side-message-body .rich-subsection-item {
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.03);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-side-message-body .rich-subsection-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.firefly-side-message-body .rich-subsection-item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-side-message-body .rich-subsection-item-title {
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.firefly-side-message-body .rich-subsection-item-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.firefly-side-message-body .rich-table-wrap {
+    overflow-x: auto;
+}
+
+.firefly-side-message-body .rich-table,
+.firefly-side-message-body .rich-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.firefly-side-message-body .rich-table th,
+.firefly-side-message-body .rich-table td,
+.firefly-side-message-body .rich-summary-table th,
+.firefly-side-message-body .rich-summary-table td {
+    padding: 8px 9px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    text-align: left;
+    vertical-align: top;
+}
+
+.firefly-side-message-body .rich-table th,
+.firefly-side-message-body .rich-summary-table th {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.firefly-side-message-body .rich-table .title-cell,
+.firefly-side-message-body .rich-summary-table .title-cell {
+    min-width: 180px;
+    line-height: 1.45;
 }
 
 .firefly-side-message-meta {
@@ -356,7 +649,7 @@
 
 .firefly-side-composer-footer {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
@@ -386,7 +679,6 @@
     margin-left: auto;
 }
 
-.firefly-side-secondary-btn,
 .firefly-side-primary-btn {
     min-height: 36px;
     padding: 0 14px;
@@ -395,11 +687,6 @@
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-}
-
-.firefly-side-secondary-btn {
-    background: rgba(15, 23, 42, 0.05);
-    color: var(--text-secondary);
 }
 
 .firefly-side-primary-btn {

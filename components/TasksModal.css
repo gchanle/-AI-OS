@@ -104,6 +104,19 @@
     margin-right: 12px;
 }
 
+.task-copy-modal {
+    flex: 1;
+    min-width: 0;
+    margin-right: 12px;
+}
+
+.task-meta-modal {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+}
+
 .modal-edit-input {
     font-size: 14px;
     padding: 4px 6px;

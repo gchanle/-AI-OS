@@ -182,6 +182,16 @@
     margin-bottom: 20px;
 }
 
+.rs-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 8px;
+}
+
 .rs-section-title {
     display: flex;
     align-items: center;
@@ -189,9 +199,19 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-light);
-    margin-bottom: 8px;
+}
+
+.rs-more-link {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.rs-more-link.muted {
+    color: var(--text-tertiary);
+    pointer-events: none;
 }
 
 /* List Items */
@@ -199,6 +219,24 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+.rs-list-capped {
+    max-height: 188px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.rs-list-tight .rs-list-item {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.rs-list-empty {
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+    padding: 12px 0;
 }
 
 .rs-list-item {
@@ -209,6 +247,8 @@
     border-radius: var(--radius-sm);
     transition: background 0.15s ease;
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
 }
 
 .rs-list-item:hover {
@@ -250,9 +290,11 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--text-primary);
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.45;
 }
 
 .item-desc {
@@ -267,6 +309,15 @@
     font-size: 10px;
     color: var(--text-tertiary);
     flex-shrink: 0;
+}
+
+.rs-list-capped::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rs-list-capped::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.12);
+    border-radius: 999px;
 }
 
 /* Course List */
@@ -331,6 +382,94 @@
     border: 1px solid var(--border-light);
 }
 
+.rs-progress-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.rs-progress-link:hover {
+    background: rgba(0, 102, 204, 0.05);
+    border-color: rgba(0, 102, 204, 0.18);
+    transform: translateY(-1px);
+}
+
+.rs-approval-section {
+    margin-top: 4px;
+}
+
+.rs-approval-head {
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.rs-approval-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.rs-approval-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rs-approval-tab:hover {
+    color: var(--text-primary);
+}
+
+.rs-approval-tab.active {
+    background: var(--bg-white);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.rs-approval-tab-label {
+    min-width: 0;
+}
+
+.rs-approval-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 600;
+    transition: inherit;
+}
+
+.rs-approval-tab.active .rs-approval-tab-count {
+    background: rgba(0, 102, 204, 0.1);
+    color: var(--primary);
+}
+
+.rs-approval-empty {
+    padding: 10px 4px 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
 .prog-top {
     display: flex;
     justify-content: space-between;
@@ -342,6 +481,7 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--text-primary);
+    line-height: 1.45;
 }
 
 .prog-badge {
@@ -349,6 +489,15 @@
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 4px;
+}
+
+.prog-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 10px;
+    color: var(--text-tertiary);
 }
 
 .prog-time {

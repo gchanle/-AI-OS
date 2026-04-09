@@ -1,0 +1,215 @@
+.admin-root {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(0, 102, 204, 0.08), transparent 24%),
+        linear-gradient(180deg, #f5f7fb 0%, #eef3f9 100%);
+}
+
+.admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.admin-topbar-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    min-height: 72px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.admin-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text-primary);
+    min-width: 0;
+}
+
+.admin-brand-logo {
+    height: 34px;
+    width: auto;
+    object-fit: contain;
+}
+
+.admin-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-brand-copy strong {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.admin-brand-copy small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.admin-topnav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.admin-topnav-link {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-topnav-link.active {
+    color: var(--primary);
+    background: rgba(0, 102, 204, 0.09);
+}
+
+.admin-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-profile-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 6px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.admin-profile-chip strong {
+    display: block;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.admin-profile-chip small {
+    display: block;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.admin-profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.admin-topbar-link,
+.admin-back-link {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.admin-app-shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 24px 36px;
+}
+
+.admin-page-head {
+    padding: 0 0 20px;
+}
+
+.admin-page-kicker,
+.admin-access-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-page-head h1,
+.admin-access-denied h1 {
+    margin-top: 10px;
+    font-size: 36px;
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+}
+
+.admin-page-head p,
+.admin-access-denied p {
+    margin-top: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.admin-access-denied {
+    margin-top: 56px;
+    padding: 28px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+@media (max-width: 1100px) {
+    .admin-topbar-inner {
+        flex-wrap: wrap;
+        padding: 14px 20px;
+    }
+
+    .admin-topnav {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 720px) {
+    .admin-app-shell {
+        padding: 20px 16px 28px;
+    }
+
+    .admin-topbar-inner {
+        padding: 14px 16px;
+    }
+
+    .admin-topbar-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

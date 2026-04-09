@@ -9,7 +9,7 @@
 }
 
 .capability-shell {
-    max-width: 1520px;
+    max-width: 1380px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -87,7 +87,9 @@
 .capability-hero-actions,
 .capability-tab-row,
 .capability-panel-head,
-.capability-item-head {
+.capability-item-head,
+.capability-panel-actions,
+.capability-method-top {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -100,7 +102,8 @@
 
 .capability-primary-link,
 .capability-inline-link,
-.capability-tab {
+.capability-tab,
+.capability-hint-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -124,6 +127,7 @@
 }
 
 .capability-inline-link:hover,
+.capability-hint-btn:hover,
 .capability-tab.active,
 .capability-tab:hover {
     color: var(--primary);
@@ -132,7 +136,8 @@
 }
 
 .capability-primary-link:hover,
-.capability-inline-link:hover {
+.capability-inline-link:hover,
+.capability-hint-btn:hover {
     transform: translateY(-1px);
 }
 
@@ -178,14 +183,59 @@
     gap: 10px;
 }
 
+.capability-method-grid.compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.capability-method-grid.compact .capability-method-card h3 {
+    font-size: 16px;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+}
+
+.capability-method-top {
+    justify-content: space-between;
+}
+
+.capability-hint-btn {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.capability-hint-btn.active {
+    color: var(--primary);
+    background: rgba(0, 102, 204, 0.08);
+    border-color: rgba(0, 102, 204, 0.14);
+}
+
+.capability-inline-tip {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(0, 102, 204, 0.05);
+    border: 1px solid rgba(0, 102, 204, 0.08);
+}
+
 .capability-tab-row {
     flex-wrap: wrap;
+}
+
+.capability-tab-shell {
+    padding: 8px;
+    border-radius: 20px;
 }
 
 .capability-panel-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+}
+
+.capability-panel-grid.runtime {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .capability-panel-grid > .capability-panel:last-child {
@@ -208,6 +258,148 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
     color: inherit;
     text-decoration: none;
+}
+
+.capability-runtime-metrics,
+.capability-runtime-recovery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.capability-runtime-metric,
+.capability-runtime-node,
+.capability-runtime-tool,
+.capability-runtime-stack {
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.capability-runtime-metric span,
+.capability-runtime-tool small,
+.capability-runtime-node span,
+.capability-runtime-row small {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+.capability-runtime-metric strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 22px;
+}
+
+.capability-runtime-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr) 32px minmax(0, 1fr) 32px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+}
+
+.capability-runtime-layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.capability-runtime-layer-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px;
+    gap: 10px;
+    align-items: center;
+}
+
+.capability-runtime-arrow {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.capability-runtime-node {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.capability-runtime-node.highlight {
+    background: rgba(0, 102, 204, 0.08);
+    border-color: rgba(0, 102, 204, 0.14);
+}
+
+.capability-runtime-tool-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.capability-runtime-tool {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.capability-runtime-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.capability-runtime-chip-row.compact {
+    margin-top: 2px;
+}
+
+.capability-runtime-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.capability-runtime-chip.muted {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary);
+}
+
+.capability-runtime-binding-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.capability-runtime-tool-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.capability-runtime-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.capability-runtime-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.capability-runtime-row:first-of-type {
+    border-top: none;
+    padding-top: 0;
 }
 
 .capability-item-card strong,
@@ -274,7 +466,11 @@
     .capability-metrics,
     .capability-method-grid,
     .capability-panel-grid,
-    .capability-card-list {
+    .capability-panel-grid.runtime,
+    .capability-card-list,
+    .capability-runtime-metrics,
+    .capability-runtime-recovery,
+    .capability-runtime-tool-list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
@@ -293,7 +489,12 @@
     .capability-metrics,
     .capability-method-grid,
     .capability-panel-grid,
-    .capability-card-list {
+    .capability-panel-grid.runtime,
+    .capability-card-list,
+    .capability-runtime-metrics,
+    .capability-runtime-recovery,
+    .capability-runtime-tool-list,
+    .capability-runtime-flow {
         grid-template-columns: 1fr;
     }
 }

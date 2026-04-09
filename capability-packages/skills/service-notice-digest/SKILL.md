@@ -2,7 +2,7 @@
 id: service-notice-digest
 title: 通知分拣员
 description: 把通知中心未读消息自动归并成待办、提醒和参考信息三类。
-capability: services
+capability: messages
 owner: 学校数字校园中心
 origin: school
 provider: 学校官方
@@ -21,7 +21,7 @@ invocation_modes:
 # 通知分拣员
 
 ## Purpose
-降低用户逐条阅读消息的成本，把校园通知先做优先级判断，再决定是否需要回到系统详情页。
+降低用户逐条阅读消息的成本，把校园通知先做优先级判断，再决定是否需要回到消息详情页或萤火虫继续处理。
 
 ## Inputs
 - 当日通知列表
@@ -36,6 +36,7 @@ invocation_modes:
 ## Outputs
 - 输出一份可直接给萤火虫解释的消息摘要。
 - 在必要时附带建议动作和跳转入口。
+- 输出格式需要支持“未读消息问答、优先级分拣、后续待办生成”三类使用方式。
 
 ## Safety
 - 不得改变通知本身状态，除非获得明确授权。

@@ -1,24 +1,30 @@
 'use client';
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import {
     todayCourses,
-    notifications,
-    mockMessages,
     mockNews,
     mockSchedules,
-    mockApprovals,
     mockFavoriteServices,
     mockRecentServices
 } from '@/data/mock';
+import {
+    loadApprovalCenterState,
+    subscribeApprovalCenter,
+    syncCampusApprovals,
+} from '@/data/approvalCenter';
+import {
+    formatMessageTime,
+    loadMessageCenterItems,
+    subscribeMessageCenter,
+} from '@/data/messageCenter';
+import {
+    ensureCampusUserProfile,
+    subscribeCampusUserProfile,
+} from '@/data/userProfile';
 import './RightSidebar.css';
 
 const RIGHT_SIDEBAR_COLLAPSE_KEY = 'campus_right_sidebar_collapsed';
-
-const STATUS_MAP = {
-    processing: { label: '审核中', color: '#FF9500' },
-    approved: { label: '已通过', color: '#34C759' },
-    pending: { label: '待提交', color: '#FF3B30' },
-};
 
 const icons = {
     info: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>,
@@ -52,9 +58,13 @@ const getServiceIcon = (type) => {
 
 export default function RightSidebar() {
     const [activeTab, setActiveTab] = useState('todo');
+    const [approvalTab, setApprovalTab] = useState('pending');
     const [collapsed, setCollapsed] = useState(false);
     const [liveData, setLiveData] = useState({ weibo: [], news: [] });
     const [isReady, setIsReady] = useState(false);
+    const [messageItems, setMessageItems] = useState(() => loadMessageCenterItems({ preferStorage: false }));
+    const [approvalState, setApprovalState] = useState(() => loadApprovalCenterState());
+    const [userProfile, setUserProfile] = useState(() => ensureCampusUserProfile());
 
     useEffect(() => {
         try {
@@ -102,6 +112,74 @@ export default function RightSidebar() {
             window.clearTimeout(readyTimer);
         };
     }, []);
+
+    useEffect(() => {
+        setMessageItems(loadMessageCenterItems());
+        return subscribeMessageCenter(setMessageItems);
+    }, []);
+
+    useEffect(() => subscribeCampusUserProfile(setUserProfile), []);
+
+    useEffect(() => {
+        setApprovalState(loadApprovalCenterState());
+        return subscribeApprovalCenter(setApprovalState);
+    }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const syncApprovals = async () => {
+            try {
+                const nextState = await syncCampusApprovals({
+                    uid: userProfile.uid,
+                    fid: userProfile.fid,
+                });
+
+                if (!cancelled) {
+                    setApprovalState(nextState);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setApprovalState(loadApprovalCenterState());
+                }
+            }
+        };
+
+        syncApprovals();
+        const timer = window.setInterval(syncApprovals, 4 * 60 * 1000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [userProfile.fid, userProfile.uid]);
+
+    const messagePreview = messageItems.slice(0, 4);
+    const noticePreview = messageItems.filter((item) => item.sourceId === 'study' || item.sourceId === 'system').slice(0, 3);
+    const newsPreview = liveData.news.slice(0, 4);
+    const hotPreview = liveData.weibo.slice(0, 5);
+    const approvalGroups = [
+        {
+            key: 'pending',
+            label: '待我审批',
+            count: approvalState.pendingCount,
+            items: approvalState.pending.slice(0, 4),
+        },
+        {
+            key: 'initiated',
+            label: '我发起的',
+            count: approvalState.initiatedCount,
+            items: approvalState.initiated.slice(0, 4),
+        },
+        {
+            key: 'records',
+            label: '审批记录',
+            count: approvalState.recordCount,
+            items: approvalState.records.slice(0, 4),
+        },
+    ];
+    const hasApprovals = approvalGroups.some((group) => group.items.length > 0);
+    const activeApprovalGroup = approvalGroups.find((group) => group.key === approvalTab) || approvalGroups[0];
 
     const tabs = [
         { key: 'info', label: '资讯', icon: icons.info },
@@ -180,43 +258,60 @@ export default function RightSidebar() {
                 {activeTab === 'info' && (
                     <div className="rs-tab-content">
                         <div className="rs-section">
-                            <div className="rs-section-title">{icons.message} 消息</div>
-                            <div className="rs-list">
-                                {mockMessages.map((m) => (
-                                    <div key={m.id} className={`rs-list-item ${m.unread ? 'unread' : ''}`}>
-                                        {m.unread && <div className="item-dot"></div>}
-                                        <div className="item-body">
-                                            <div className="item-title-row">
-                                                <span className="item-sender">{m.sender}</span>
-                                                <span className="item-time">{m.time}</span>
-                                            </div>
-                                            <div className="item-desc">{m.content}</div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="rs-section-head">
+                                <div className="rs-section-title">{icons.message} 消息</div>
+                                <Link href="/messages" className="rs-more-link">查看更多</Link>
                             </div>
-                        </div>
-                        <div className="rs-section">
-                            <div className="rs-section-title">{icons.bell} 通知</div>
-                            <div className="rs-list">
-                                {notifications.slice(0, 3).map((n) => (
-                                    <div key={n.id} className={`rs-list-item ${!n.read ? 'unread' : ''}`}>
-                                        {!n.read && <div className="item-dot"></div>}
-                                        <div className="item-body">
-                                            <div className="item-title">{n.title}</div>
-                                            <div className="item-time">{n.time}</div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="rs-section">
-                            <div className="rs-section-title">🔥 微博热搜</div>
-                            <div className="rs-list">
-                                {liveData.weibo.length === 0 ? (
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '12px 0' }}>加载中...</div>
+                            <div className="rs-list rs-list-capped">
+                                {messagePreview.length === 0 ? (
+                                    <div className="rs-list-empty">暂无消息</div>
                                 ) : (
-                                    liveData.weibo.map((news) => (
+                                    messagePreview.map((m) => (
+                                        <Link key={m.id} href={`/messages/${encodeURIComponent(m.id)}`} className={`rs-list-item ${m.read ? '' : 'unread'}`}>
+                                            {!m.read && <div className="item-dot"></div>}
+                                            <div className="item-body">
+                                                <div className="item-title-row">
+                                                    <span className="item-sender">{m.sourceLabel}</span>
+                                                    <span className="item-time">{formatMessageTime(m.createdAt)}</span>
+                                                </div>
+                                                <div className="item-desc">{m.title}</div>
+                                            </div>
+                                        </Link>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                        <div className="rs-section">
+                            <div className="rs-section-head">
+                                <div className="rs-section-title">{icons.bell} 通知</div>
+                                <Link href="/messages" className="rs-more-link">查看更多</Link>
+                            </div>
+                            <div className="rs-list rs-list-capped">
+                                {noticePreview.length === 0 ? (
+                                    <div className="rs-list-empty">暂无通知</div>
+                                ) : (
+                                    noticePreview.map((n) => (
+                                        <Link key={n.id} href={`/messages/${encodeURIComponent(n.id)}`} className={`rs-list-item ${n.read ? '' : 'unread'}`}>
+                                            {!n.read && <div className="item-dot"></div>}
+                                            <div className="item-body">
+                                                <div className="item-title">{n.title}</div>
+                                                <div className="item-time">{formatMessageTime(n.createdAt)}</div>
+                                            </div>
+                                        </Link>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                        <div className="rs-section">
+                            <div className="rs-section-head">
+                                <div className="rs-section-title">🔥 热搜</div>
+                                <a href="https://s.weibo.com/top/summary" target="_blank" rel="noopener noreferrer" className="rs-more-link">查看原榜</a>
+                            </div>
+                            <div className="rs-list rs-list-capped rs-list-tight">
+                                {hotPreview.length === 0 ? (
+                                    <div className="rs-list-empty">加载中...</div>
+                                ) : (
+                                    hotPreview.map((news) => (
                                         <a key={news.id} href={news.url} target="_blank" rel="noopener noreferrer" className="rs-list-item" style={{ textDecoration: 'none', color: 'inherit' }}>
                                             <div className="item-body">
                                                 <div className="item-title">
@@ -232,12 +327,15 @@ export default function RightSidebar() {
                             </div>
                         </div>
                         <div className="rs-section">
-                            <div className="rs-section-title">📰 综合新闻</div>
-                            <div className="rs-list">
-                                {liveData.news.length === 0 ? (
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '12px 0' }}>加载中...</div>
+                            <div className="rs-section-head">
+                                <div className="rs-section-title">📰 综合新闻</div>
+                                <span className="rs-more-link muted">实时更新</span>
+                            </div>
+                            <div className="rs-list rs-list-capped">
+                                {newsPreview.length === 0 ? (
+                                    <div className="rs-list-empty">加载中...</div>
                                 ) : (
-                                    liveData.news.map((news) => (
+                                    newsPreview.map((news) => (
                                         <a key={news.id} href={news.url} target="_blank" rel="noopener noreferrer" className="rs-list-item" style={{ textDecoration: 'none', color: 'inherit' }}>
                                             <div className="item-body">
                                                 <div className="item-title">
@@ -287,22 +385,69 @@ export default function RightSidebar() {
                                 ))}
                             </div>
                         </div>
-                        <div className="rs-section">
-                            <div className="rs-section-title">{icons.todo} 我的审批流程</div>
-                            <div className="rs-progress-list">
-                                {mockApprovals.map((item) => {
-                                    const st = STATUS_MAP[item.status];
-                                    return (
-                                        <div key={item.id} className="rs-progress">
-                                            <div className="prog-top">
-                                                <span className="prog-name">{item.title}</span>
-                                                <span className="prog-badge" style={{ background: st.color + '18', color: st.color }}>{st.label}</span>
-                                            </div>
-                                            <div className="prog-time">{item.time}</div>
-                                        </div>
-                                    );
-                                })}
+                        <div className="rs-section rs-approval-section">
+                            <div className="rs-section-head rs-approval-head">
+                                <div className="rs-section-title">{icons.todo} 审批待办</div>
+                                <a
+                                    href="https://office.chaoxing.com/front/web/approve/apps/index?"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="rs-more-link"
+                                >
+                                    查看更多
+                                </a>
                             </div>
+                            {!hasApprovals ? (
+                                <div className="rs-list-empty">审批数据同步后会显示在这里</div>
+                            ) : (
+                                <div className="rs-progress-list">
+                                    <div className="rs-approval-tabs">
+                                        {approvalGroups.map((group) => (
+                                            <button
+                                                key={group.key}
+                                                type="button"
+                                                className={`rs-approval-tab ${approvalTab === group.key ? 'active' : ''}`}
+                                                onClick={() => setApprovalTab(group.key)}
+                                            >
+                                                <span className="rs-approval-tab-label">{group.label}</span>
+                                                <small className="rs-approval-tab-count">{group.count}</small>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {activeApprovalGroup?.items.length === 0 ? (
+                                        <div className="rs-approval-empty">当前没有记录</div>
+                                    ) : (
+                                        activeApprovalGroup.items.map((item) => (
+                                            <a
+                                                key={item.id}
+                                                className="rs-progress rs-progress-link"
+                                                href={item.href || 'https://demo.hall.chaoxing.com/home'}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                <div className="prog-top">
+                                                    <span className="prog-name">{item.title}</span>
+                                                    <span
+                                                        className="prog-badge"
+                                                        style={{
+                                                            background: `${item.status.color}18`,
+                                                            color: item.status.color,
+                                                        }}
+                                                    >
+                                                        {item.statusLabel}
+                                                    </span>
+                                                </div>
+                                                <div className="prog-meta">
+                                                    <span>{item.formName}</span>
+                                                    {item.sponsor ? <span>发起人：{item.sponsor}</span> : null}
+                                                    {item.group === 'records' ? <span>类型：{item.source}</span> : null}
+                                                </div>
+                                                <div className="prog-time">{formatMessageTime(item.updatedAt, true)}</div>
+                                            </a>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

@@ -6,6 +6,15 @@ export const CAMPUS_MESSAGE_SYNC_EVENT = 'campus-message-sync';
 export const CAMPUS_OPEN_FIREFLY_EVENT = 'campus-open-firefly';
 export const CAMPUS_PENDING_ACTION_KEY = 'campus_pending_message_action_v1';
 
+export const studyNoticeMessageSource = {
+    id: 'study',
+    label: '学习通通知',
+    href: '/messages',
+    summary: '来自学习通与相关业务侧的未读通知，会聚合进校园 OS 消息中心。',
+    source: '学习通通知',
+    kind: 'external',
+};
+
 export const campusModules = [
     {
         id: 'firefly',
@@ -87,20 +96,33 @@ export const campusModuleMap = Object.fromEntries(
 
 export const campusCapabilityModules = campusModules.filter((item) => item.capabilityId);
 
-export const messageSourceOrder = ['all', 'firefly', 'services', 'research', 'assistant', 'library', 'agents', 'connectors', 'system'];
-export const messageSourceMap = Object.fromEntries(
-    campusModules.map((item) => [
-        item.id,
-        {
-            id: item.id,
-            label: item.label,
-            href: item.href,
-            summary: item.summary,
-            source: item.source,
-            kind: item.kind,
-        },
-    ])
-);
+export const auxiliaryCapabilities = [
+    {
+        id: 'messages',
+        name: '消息中心',
+        source: '统一消息中心',
+        href: '/messages',
+        summary: '统一读取未读消息、通知详情、优先级分拣与消息回执',
+    },
+];
+
+export const messageSourceOrder = ['all', 'study', 'firefly', 'services', 'research', 'assistant', 'library', 'agents', 'connectors', 'system'];
+export const messageSourceMap = {
+    ...Object.fromEntries(
+        campusModules.map((item) => [
+            item.id,
+            {
+                id: item.id,
+                label: item.label,
+                href: item.href,
+                summary: item.summary,
+                source: item.source,
+                kind: item.kind,
+            },
+        ])
+    ),
+    [studyNoticeMessageSource.id]: studyNoticeMessageSource,
+};
 
 export function canUseBrowserStorage() {
     return typeof window !== 'undefined';
@@ -124,13 +146,16 @@ export function buildMessageSourceTabs() {
 }
 
 export function buildCampusCapabilities() {
-    return campusCapabilityModules.map((item) => ({
-        id: item.capabilityId,
-        name: item.label,
-        source: item.source,
-        href: item.href,
-        summary: item.summary,
-    }));
+    return [
+        ...campusCapabilityModules.map((item) => ({
+            id: item.capabilityId,
+            name: item.label,
+            source: item.source,
+            href: item.href,
+            summary: item.summary,
+        })),
+        ...auxiliaryCapabilities,
+    ];
 }
 
 export function loadWorkspacePrefs() {

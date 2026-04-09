@@ -38,6 +38,7 @@ export const skillPackageValidationMap = {
 
 export const capabilityLabelMap = {
     services: 'AI 办事',
+    messages: '消息中心',
     research: 'AI 科研',
     assistant: 'AI 助教',
     library: 'AI 图书馆',
@@ -103,14 +104,14 @@ const baseSkillCatalog = [
         origin: 'school',
         status: 'enabled',
         marketStatus: 'limited',
-        targetCapabilityId: 'services',
+        targetCapabilityId: 'messages',
         fireflyEnabled: true,
         connectorIds: ['notice-center'],
         invocationModes: ['chat', 'event'],
         audience: '全校用户',
-        description: '适合作为统一消息中心和萤火虫之间的桥接技能，对通知进行分类、摘要和优先级标记。',
-        publishNote: '单位默认启用，可按学校消息策略做定制化分级。',
-        reviewNote: '由学校信息化部门维护，允许校内二次配置。',
+        description: '适合作为统一消息中心和萤火虫之间的桥接技能，对通知进行分类、摘要、优先级标记与后续动作建议。',
+        publishNote: '默认归入消息中心能力域，可按学校消息策略做定制化分级。',
+        reviewNote: '由学校信息化部门维护，允许校内二次配置，并作为萤火虫的标准消息能力启用。',
         suggestedPrompts: [
             '把今天新增通知里最重要的两条挑出来。',
             '哪些消息必须今天处理，哪些只是看看就行？',
