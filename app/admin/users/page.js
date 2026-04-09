@@ -1,11 +1,11 @@
 import '../admin-sections.css';
 
 const mockUsers = [
-    { id: 'u-001', name: '周亚敏', role: '学校管理员', department: '信息中心', status: '已开通', lastActive: '今天 09:42' },
-    { id: 'u-002', name: '陈老师', role: '教师', department: '计算机学院', status: '已开通', lastActive: '今天 08:17' },
-    { id: 'u-003', name: '李老师', role: '教师', department: '图书馆', status: '已开通', lastActive: '昨天 18:30' },
-    { id: 'u-004', name: '王同学', role: '学生', department: '人工智能学院', status: '已开通', lastActive: '今天 10:10' },
-    { id: 'u-005', name: '赵同学', role: '学生', department: '历史学院', status: '未开通', lastActive: '未登录' },
+    { id: 'u-001', name: '演示管理员', role: '学校管理员', department: '信息中心', status: '已开通', lastActive: '今天 09:42' },
+    { id: 'u-002', name: '教师示例 A', role: '教师', department: '计算机学院', status: '已开通', lastActive: '今天 08:17' },
+    { id: 'u-003', name: '教师示例 B', role: '教师', department: '图书馆', status: '已开通', lastActive: '昨天 18:30' },
+    { id: 'u-004', name: '学生示例 A', role: '学生', department: '人工智能学院', status: '已开通', lastActive: '今天 10:10' },
+    { id: 'u-005', name: '学生示例 B', role: '学生', department: '历史学院', status: '未开通', lastActive: '未登录' },
 ];
 
 export default function AdminUsersPage() {

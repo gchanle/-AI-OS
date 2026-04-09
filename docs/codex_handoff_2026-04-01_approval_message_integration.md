@@ -200,9 +200,9 @@ Current code has an `fid -> sign/key` mapping for approval record API in:
 
 - `lib/chaoxingApprovals.js`
 
-Currently configured for:
+Currently sanitized in the shared repo as:
 
-- `fid=217097`
+- `fid=demo-fid-0001`
 
 Important product/technical note:
 

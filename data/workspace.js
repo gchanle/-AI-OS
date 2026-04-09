@@ -9,19 +9,16 @@ export const capabilityMap = Object.fromEntries(
 );
 
 export const chatModelCandidates = [
-  { id: 'kimi-k2.5', label: 'KIMI 2.5', summary: '主对话默认' },
-  { id: 'qwen3.5-plus', label: 'Qwen3.5 Plus', summary: '长文与多模态' },
-  { id: 'qwen3-max-2026-01-23', label: 'Qwen3 Max', summary: '复杂任务与推理' },
-  { id: 'qwen3-coder-next', label: 'Qwen3 Coder Next', summary: '编码与修复' },
-  { id: 'qwen3-coder-plus', label: 'Qwen3 Coder Plus', summary: '代码与规划' },
-  { id: 'MiniMax-M2.5', label: 'MiniMax M2.5', summary: '超长上下文' },
-  { id: 'glm-5', label: 'GLM-5', summary: '推理与通用问答' },
-  { id: 'glm-4.7', label: 'GLM-4.7', summary: '轻量推理' },
+  { id: 'firefly-general-demo', label: 'Firefly General Demo', summary: '默认演示模型' },
+  { id: 'firefly-knowledge-demo', label: 'Firefly Knowledge Demo', summary: '长文与知识整理演示' },
+  { id: 'firefly-reasoner-demo', label: 'Firefly Reasoner Demo', summary: '复杂推理演示' },
+  { id: 'firefly-coder-demo', label: 'Firefly Coder Demo', summary: '代码与规划演示' },
+  { id: 'firefly-lite-demo', label: 'Firefly Lite Demo', summary: '轻量响应演示' },
 ];
 
 export const chatModelOptions = chatModelCandidates;
 
-export const defaultChatModelId = 'kimi-k2.5';
+export const defaultChatModelId = 'firefly-general-demo';
 
 export const chatModelMap = Object.fromEntries(
   chatModelCandidates.map((item) => [item.id, item])

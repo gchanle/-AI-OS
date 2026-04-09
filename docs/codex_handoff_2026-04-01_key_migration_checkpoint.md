@@ -257,10 +257,10 @@ Important:
 - brackets around `key` are required
 - current verified request omits `fid` from signature/query
 
-Current working credentials for `fid=217097`:
+Current sanitized placeholder credentials for `fid=demo-fid-0001`:
 
-- `sign=approveData_zhizhen`
-- `key=DaJHNgE&HNF%EIRXbc`
+- `sign=approveData_demo`
+- `key=DEMO_APPROVAL_KEY`
 
 User explicitly warned:
 
@@ -273,7 +273,7 @@ UID must not be hardcoded in business UI logic.
 
 Current approach:
 
-- default profile values still point to the current test user
+- default profile values now point to a demo user
 - runtime profile abstraction lives in `data/userProfile.js`
 - future login integration should replace these values dynamically
 

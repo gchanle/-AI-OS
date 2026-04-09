@@ -1,10 +1,10 @@
 export const CAMPUS_USER_PROFILE_KEY = 'campus_user_profile_v1';
 
 const DEFAULT_PROFILE = {
-    uid: '176706248',
-    fid: '217097',
-    name: '亚敏 Alexis',
-    chaoxingName: '周亚敏',
+    uid: 'demo-user-0001',
+    fid: 'demo-fid-0001',
+    name: 'Demo Admin',
+    chaoxingName: '演示账号',
     avatar: '/user-avatar.png',
     role: 'school_admin',
     permissions: ['admin:school_console'],

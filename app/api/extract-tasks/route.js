@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
     try {
         const { text, sessionId } = await request.json();
+        const extractionModelId = process.env.FIREFLY_TASK_EXTRACTION_MODEL || 'firefly-coder-demo';
 
         if (!text) {
             return NextResponse.json({ tasks: [] });
@@ -39,7 +40,7 @@ If there are no explicit commands for you to perform, return an empty array [].`
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'qwen3-coder-plus',
+                model: extractionModelId,
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: text }

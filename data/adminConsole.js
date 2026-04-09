@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS = {
         },
     ],
     defaultFirefly: {
-        modelId: 'kimi-k2.5',
+        modelId: 'firefly-general-demo',
         capabilityIds: ['services', 'research', 'assistant'],
         webSearchEnabled: false,
         deepResearchEnabled: false,
