@@ -18,6 +18,18 @@ import {
     readDirectUrl,
 } from '@/services/fireflyUrlRuntimeService';
 import {
+    buildMcpApprovalTableMarkdown,
+    buildMcpAppListMarkdown,
+    buildMcpNoticeTableMarkdown,
+} from '@/services/fireflyMcpFormatterService';
+import {
+    fetchServiceHallApprovalSummary,
+    fetchServiceHallAppItems,
+    fetchServiceHallNoticeItems,
+    hasServiceHallMcpAuth,
+} from '@/services/serviceHallMcpService';
+import { filterFireflyToolsByMarketAccess } from '@/data/capabilityMarket';
+import {
     filterEnabledFireflyTools,
     isFireflyToolEnabled,
     loadAdminAgentRuntimeConfig,
@@ -77,11 +89,28 @@ function hasLibraryContext(snapshot = {}) {
 }
 
 function matchMessageTool(question = '') {
-    return /未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒/.test(question);
+    const normalizedQuestion = String(question || '').trim();
+    if (!normalizedQuestion) {
+        return false;
+    }
+
+    if (/未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒|维度消息|收件箱/.test(normalizedQuestion)) {
+        return true;
+    }
+
+    return /消息/.test(normalizedQuestion) && /最近|最新|我的|帮我看|帮我查|获取|整理|汇总|报告|简报|文档/.test(normalizedQuestion);
 }
 
 function matchApprovalTool(question = '') {
     return /审批|待办|流程|我发起|待我审批|抄送我|已审批/.test(question);
+}
+
+function matchAppTool(question = '') {
+    if (!/应用|应用门户|办事大厅|服务大厅|搜应用|查应用|找应用/.test(question)) {
+        return false;
+    }
+
+    return !/消息|通知|审批记录|待我审批|我发起|抄送我|已审批/.test(question);
 }
 
 function matchLibraryTool(question = '', snapshot = {}, capabilityIds = []) {
@@ -192,54 +221,22 @@ function matchWebSearchTool(question = '', contextSnapshot = {}) {
 }
 
 function buildUnreadMarkdown(result) {
-    if (!result.items.length) {
-        return [
-            '### 学习通通知',
-            '当前没有未读消息。',
-            '',
-            '[打开消息中心](/messages)',
-        ].join('\n');
-    }
-
-    const lines = [
-        '### 学习通通知',
-        `当前共有 ${result.unreadCount} 条未读消息，以下展示最近 ${result.items.length} 条。`,
-        '',
-        '| 标题 | 时间 | 动作 |',
-        '| --- | --- | --- |',
-        ...result.items.map((item) => (
-            `| ${item.title} | ${formatDateTime(item.createdAt)} | [查看详情](/messages/${encodeURIComponent(item.id)}) |`
-        )),
-        '',
-        '[查看更多](/messages)',
-    ];
-
-    return lines.join('\n');
+    return buildMcpNoticeTableMarkdown(result.items, {
+        title: '学习通通知',
+        emptyText: '当前没有未读消息。',
+        moreLink: '/messages',
+    });
 }
 
 function buildApprovalMarkdown(result) {
     const sections = [];
 
     const buildSection = (label, items, total, emptyText, link = APPROVAL_CENTER_LINK) => {
-        if (!items.length) {
-            return [
-                `### ${label}`,
-                emptyText,
-            ].join('\n');
-        }
-
-        return [
-            `### ${label}`,
-            `共 ${total} 条，以下展示最近 ${items.length} 条。`,
-            '',
-            '| 标题 | 状态 | 时间 | 动作 |',
-            '| --- | --- | --- | --- |',
-            ...items.map((item) => (
-                `| ${item.title} | ${item.statusLabel} | ${formatDateTime(item.updatedAt)} | ${item.href ? `[打开审批](${item.href})` : '-'} |`
-            )),
-            '',
-            `[查看更多](${link})`,
-        ].join('\n');
+        return buildMcpApprovalTableMarkdown(items, {
+            title: `${label}${items.length > 0 ? `（共 ${total} 条）` : ''}`,
+            emptyText,
+            moreLink: link,
+        });
     };
 
     sections.push(buildSection(
@@ -278,6 +275,13 @@ function buildApprovalMarkdown(result) {
     ));
 
     return sections.join('\n\n');
+}
+
+function buildAppSearchMarkdown(result) {
+    return buildMcpAppListMarkdown(result.items, {
+        title: '办事大厅应用',
+        emptyText: '暂无相关应用。',
+    });
 }
 
 function buildLibraryMarkdown(question, snapshot = {}) {
@@ -519,8 +523,8 @@ const fireflyToolRegistry = [
         sourceKind: 'skill_adapter',
         sourceRefs: {
             connectors: ['notice-center'],
-            skills: ['service-notice-digest'],
-            mcp: [],
+            skills: ['service-notice-digest', 'mcp-response-formatter'],
+            mcp: ['mcp-servicehall-stream'],
             cli: [],
         },
         surfaces: ['main_chat', 'side_drawer', 'message_center'],
@@ -530,11 +534,23 @@ const fireflyToolRegistry = [
             const limit = Math.max(1, Number(runtimeInput?.limit || MESSAGE_LIMIT));
 
             try {
-                result = await getUnreadMessageSummary({
-                    uid,
-                    fid,
-                    limit,
-                });
+                if (hasServiceHallMcpAuth()) {
+                    result = await fetchServiceHallNoticeItems({
+                        args: {
+                            readStatus: 0,
+                        },
+                    });
+                    result = {
+                        items: result.items.slice(0, limit),
+                        unreadCount: Number(result.unreadCount || 0),
+                    };
+                } else {
+                    result = await getUnreadMessageSummary({
+                        uid,
+                        fid,
+                        limit,
+                    });
+                }
             } catch (error) {
                 if (contextSnapshot?.unreadSummary) {
                     return {
@@ -568,8 +584,8 @@ const fireflyToolRegistry = [
         sourceKind: 'connector_backed',
         sourceRefs: {
             connectors: ['service-hall'],
-            skills: [],
-            mcp: [],
+            skills: ['mcp-response-formatter'],
+            mcp: ['mcp-servicehall-stream'],
             cli: [],
         },
         surfaces: ['main_chat', 'side_drawer', 'service_center'],
@@ -579,11 +595,26 @@ const fireflyToolRegistry = [
             const limit = Math.max(1, Number(runtimeInput?.limit || APPROVAL_LIMIT));
 
             try {
-                result = await getApprovalSummary({
-                    uid,
-                    fid,
-                    limit,
-                });
+                if (hasServiceHallMcpAuth()) {
+                    const mcpResult = await fetchServiceHallApprovalSummary();
+                    result = {
+                        ...mcpResult,
+                        pending: mcpResult.pending.slice(0, limit),
+                        initiated: mcpResult.initiated.slice(0, limit),
+                        records: mcpResult.records.slice(0, limit),
+                        recordsByStatus: {
+                            approved: mcpResult.recordsByStatus.approved.slice(0, limit),
+                            copied: mcpResult.recordsByStatus.copied.slice(0, limit),
+                            othersProcessed: mcpResult.recordsByStatus.othersProcessed.slice(0, limit),
+                        },
+                    };
+                } else {
+                    result = await getApprovalSummary({
+                        uid,
+                        fid,
+                        limit,
+                    });
+                }
             } catch (error) {
                 const message = error instanceof Error ? error.message : '未知错误';
                 if (contextSnapshot?.approvalSummary) {
@@ -657,6 +688,46 @@ const fireflyToolRegistry = [
                     sourceStepKeys: sourceResults.map((item) => item.key),
                     sourceCount: contextSections.length,
                 },
+            };
+        },
+    },
+    {
+        id: 'apps.portal_search',
+        name: '应用门户工具',
+        capabilityId: 'services',
+        description: '查询办事大厅应用门户，并返回应用名称与跳转入口。',
+        sourceKind: 'mcp_backed',
+        sourceRefs: {
+            connectors: ['service-hall'],
+            skills: ['mcp-response-formatter'],
+            mcp: ['mcp-servicehall-stream'],
+            cli: [],
+        },
+        surfaces: ['main_chat', 'side_drawer', 'service_center'],
+        matcher: ({ question }) => matchAppTool(question),
+        execute: async ({ question }) => {
+            if (!hasServiceHallMcpAuth()) {
+                throw new Error('应用门户查询需要 Service Hall MCP 认证，请先在本地配置 Bearer Token 或 fid/uid/aes key。');
+            }
+
+            const keywordMatch = String(question || '').match(/(?:搜|查|找)(?:一下)?(.+?)(?:应用|入口|表单|流程)/);
+            const keyword = String(keywordMatch?.[1] || '').trim() || '应用';
+            const result = await fetchServiceHallAppItems({
+                args: {
+                    keyword,
+                },
+            });
+
+            return {
+                summary: result.items.length > 0
+                    ? `已找到 ${result.total || result.items.length} 个相关应用`
+                    : '暂无匹配的应用',
+                markdown: buildAppSearchMarkdown(result),
+                links: result.items.slice(0, 6).map((item) => ({
+                    label: item.name,
+                    href: item.pcUrl,
+                })),
+                data: result,
             };
         },
     },
@@ -1150,27 +1221,31 @@ const fireflyToolRegistry = [
     },
 ];
 
-export function listFireflyTools() {
+export function listFireflyTools(contextSnapshot = {}) {
     const config = loadAdminAgentRuntimeConfig();
-    return filterEnabledFireflyTools(
+    const enabledTools = filterEnabledFireflyTools(
         fireflyToolRegistry.map(({ matcher, execute, ...tool }) => tool),
         config
     );
+    return filterFireflyToolsByMarketAccess(enabledTools, contextSnapshot);
 }
 
-export function resolveFireflyTool(toolId) {
+export function resolveFireflyTool(toolId, contextSnapshot = {}) {
     const config = loadAdminAgentRuntimeConfig();
     const tool = fireflyToolRegistry.find((item) => item.id === toolId) || null;
     if (!tool || !isFireflyToolEnabled(toolId, config)) {
         return null;
     }
 
-    return tool;
+    return filterFireflyToolsByMarketAccess([tool], contextSnapshot)[0] || null;
 }
 
 export function matchFireflyTools({ question, contextSnapshot, capabilityIds = [] }) {
     const config = loadAdminAgentRuntimeConfig();
-    return filterEnabledFireflyTools(fireflyToolRegistry, config).filter((tool) => tool.matcher({
+    return filterFireflyToolsByMarketAccess(
+        filterEnabledFireflyTools(fireflyToolRegistry, config),
+        contextSnapshot
+    ).filter((tool) => tool.matcher({
         question,
         contextSnapshot,
         capabilityIds,

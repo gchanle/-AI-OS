@@ -91,6 +91,13 @@ function buildIntent(question = '', selectedTools = []) {
         };
     }
 
+    if (/应用|应用门户|办事大厅|服务大厅/.test(question)) {
+        return {
+            id: 'app_portal_search',
+            label: '应用查询',
+        };
+    }
+
     if (/未读|消息|通知/.test(question)) {
         return {
             id: 'message_digest',
@@ -153,6 +160,10 @@ function buildTaskTitle(question = '', selectedTools = []) {
 
     if (selectedTools.some((tool) => tool.id === 'approvals.center_overview')) {
         return '审批待办整理';
+    }
+
+    if (selectedTools.some((tool) => tool.id === 'apps.portal_search')) {
+        return '应用门户查询';
     }
 
     if (selectedTools.some((tool) => tool.id === 'messages.unread_summary')) {
@@ -262,7 +273,7 @@ function applyPlannerSelfReview(question = '', steps = [], selectedTools = [], m
     });
 
     if (/什么时候|何时|哪一年|完结|首播|最后一集|播出|上映|latest/i.test(question) && seenToolIds.has('web.search') && !seenToolIds.has('web.answer')) {
-        const webAnswerTool = resolveFireflyTool('web.answer');
+        const webAnswerTool = resolveFireflyTool('web.answer', metadata.contextSnapshot || {});
         if (webAnswerTool) {
             reviewedSteps.push(buildStep(webAnswerTool, reviewedSteps.length + 1, {
                 subtaskId: 'web-answer',
@@ -456,6 +467,7 @@ function buildPlanPayload(question, tools, reasoning, patch = {}) {
     const reviewed = applyPlannerSelfReview(question, seedSteps, tools, {
         ...(patch.metadata || {}),
         candidateTools,
+        contextSnapshot: patch.contextSnapshot || {},
     });
     const steps = reviewed.steps;
     const planKind = patch.planKind || (steps.length > 1 ? 'workflow' : 'single_tool');
@@ -540,7 +552,7 @@ export function planFireflyTask({
     const hasWebSearchTool = Boolean(toolMap['web.search']);
     const hasUrlInspectTool = Boolean(toolMap['url.inspect']);
     const matchedInOrder = planningTools.filter(Boolean);
-    const composeReportTool = resolveFireflyTool('compose.report');
+    const composeReportTool = resolveFireflyTool('compose.report', contextSnapshot);
     const wantsStructuredDelivery = requiresStructuredDelivery(question) && Boolean(composeReportTool);
 
     if (hasDigestTool && /晨报|晨间|日报|早报/.test(question)) {
@@ -919,9 +931,9 @@ export function planFireflyTask({
     }
 
     if (hasDirectUrl && hasUrlInspectTool) {
-        const urlInspectTool = resolveFireflyTool('url.inspect');
-        const pageReadTool = resolveFireflyTool('page.read');
-        const pageAnswerTool = resolveFireflyTool('page.answer');
+        const urlInspectTool = resolveFireflyTool('url.inspect', contextSnapshot);
+        const pageReadTool = resolveFireflyTool('page.read', contextSnapshot);
+        const pageAnswerTool = resolveFireflyTool('page.answer', contextSnapshot);
         const urlTools = [urlInspectTool, pageReadTool, pageAnswerTool].filter(Boolean);
 
         return buildPlanPayload(question, urlTools, [
@@ -982,9 +994,9 @@ export function planFireflyTask({
     }
 
     if (hasDeepResearchTool) {
-        const researchSearchTool = resolveFireflyTool('research.search');
-        const researchReadTool = resolveFireflyTool('research.read');
-        const researchReportTool = resolveFireflyTool('research.report');
+        const researchSearchTool = resolveFireflyTool('research.search', contextSnapshot);
+        const researchReadTool = resolveFireflyTool('research.read', contextSnapshot);
+        const researchReportTool = resolveFireflyTool('research.report', contextSnapshot);
         const researchTools = [researchSearchTool, researchReadTool, researchReportTool].filter(Boolean);
 
         return buildPlanPayload(question, researchTools, [
@@ -1044,9 +1056,9 @@ export function planFireflyTask({
     }
 
     if (hasWebSearchTool) {
-        const webSearchTool = resolveFireflyTool('web.search');
-        const webFetchTool = resolveFireflyTool('web.fetch');
-        const webAnswerTool = resolveFireflyTool('web.answer');
+        const webSearchTool = resolveFireflyTool('web.search', contextSnapshot);
+        const webFetchTool = resolveFireflyTool('web.fetch', contextSnapshot);
+        const webAnswerTool = resolveFireflyTool('web.answer', contextSnapshot);
         const webSteps = [webSearchTool, webFetchTool, webAnswerTool].filter(Boolean);
 
         return buildPlanPayload(question, webSteps, [

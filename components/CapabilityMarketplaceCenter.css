@@ -1,0 +1,314 @@
+.cap-market-page {
+    height: calc(100vh - var(--navbar-height));
+    min-height: calc(100vh - var(--navbar-height));
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding: 24px;
+    background:
+        radial-gradient(circle at top left, rgba(0, 102, 204, 0.08), transparent 28%),
+        linear-gradient(180deg, #f7f9fc 0%, #f2f5fa 100%);
+}
+
+.cap-market-shell {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cap-market-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(0, 102, 204, 0.08);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.cap-market-hero,
+.cap-market-principles,
+.cap-market-toolbar,
+.cap-market-metric,
+.cap-market-card,
+.cap-market-empty {
+    border-radius: 24px;
+}
+
+.cap-market-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 24px;
+}
+
+.cap-market-hero-copy {
+    max-width: 860px;
+}
+
+.cap-market-hero-copy h1 {
+    margin-top: 10px;
+    color: var(--text-primary);
+    font-size: 34px;
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+}
+
+.cap-market-hero-copy p,
+.cap-market-principles p,
+.cap-market-card p,
+.cap-market-empty p {
+    margin-top: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.cap-market-hero-actions,
+.cap-market-filter-row,
+.cap-market-actions,
+.cap-market-badge-row,
+.cap-market-meta,
+.cap-market-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cap-market-hero-actions {
+    justify-content: flex-end;
+}
+
+.cap-market-tab-switch,
+.cap-market-admin-link,
+.cap-market-chip,
+.cap-market-btn,
+.cap-market-inline-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.cap-market-tab-switch.active,
+.cap-market-chip.active,
+.cap-market-btn.primary,
+.cap-market-admin-link {
+    color: var(--primary);
+    border-color: rgba(0, 102, 204, 0.18);
+    background: rgba(0, 102, 204, 0.08);
+}
+
+.cap-market-btn.secondary {
+    color: #166534;
+    border-color: rgba(22, 163, 74, 0.18);
+    background: rgba(22, 163, 74, 0.08);
+}
+
+.cap-market-btn.subtle {
+    background: rgba(17, 24, 39, 0.05);
+}
+
+.cap-market-tab-switch:hover,
+.cap-market-admin-link:hover,
+.cap-market-chip:hover,
+.cap-market-btn:hover,
+.cap-market-inline-link:hover {
+    transform: translateY(-1px);
+}
+
+.cap-market-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+    transform: none;
+}
+
+.cap-market-principles,
+.cap-market-toolbar,
+.cap-market-empty {
+    padding: 16px 18px;
+}
+
+.cap-market-principles strong,
+.cap-market-empty strong {
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.cap-market-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cap-market-metric {
+    padding: 18px;
+}
+
+.cap-market-metric span,
+.cap-market-meta span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.cap-market-metric strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-primary);
+    font-size: 28px;
+    line-height: 1;
+}
+
+.cap-market-toolbar {
+    display: grid;
+    grid-template-columns: auto auto minmax(280px, 1fr);
+    gap: 12px;
+    align-items: center;
+}
+
+.cap-market-search input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+}
+
+.cap-market-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.cap-market-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+}
+
+.cap-market-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cap-market-card h3 {
+    margin-top: 10px;
+    color: var(--text-primary);
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+}
+
+.cap-market-badge,
+.cap-market-review,
+.cap-market-install-pill,
+.cap-market-tags span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.cap-market-badge.skill {
+    color: #6d28d9;
+    background: rgba(109, 40, 217, 0.08);
+}
+
+.cap-market-badge.mcp {
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.08);
+}
+
+.cap-market-review {
+    color: var(--primary);
+    background: rgba(0, 102, 204, 0.08);
+}
+
+.cap-market-install-pill {
+    color: var(--text-secondary);
+    background: rgba(17, 24, 39, 0.05);
+}
+
+.cap-market-install-pill.installed {
+    color: #166534;
+    background: rgba(22, 163, 74, 0.08);
+}
+
+.cap-market-meta {
+    gap: 12px;
+}
+
+.cap-market-tags span {
+    color: var(--text-secondary);
+    background: rgba(17, 24, 39, 0.05);
+}
+
+.cap-market-actions {
+    margin-top: auto;
+}
+
+@media (max-width: 1180px) {
+    .cap-market-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cap-market-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cap-market-toolbar {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 860px) {
+    .cap-market-page {
+        padding: 16px;
+    }
+
+    .cap-market-hero {
+        flex-direction: column;
+    }
+
+    .cap-market-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cap-market-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .cap-market-metrics {
+        grid-template-columns: 1fr;
+    }
+}

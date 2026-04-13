@@ -1,5 +1,11 @@
 .admin-root {
+    height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
     background:
         radial-gradient(circle at top left, rgba(0, 102, 204, 0.08), transparent 24%),
         linear-gradient(180deg, #f5f7fb 0%, #eef3f9 100%);
@@ -136,12 +142,19 @@
 }
 
 .admin-app-shell {
+    width: 100%;
     max-width: 1440px;
+    height: 100%;
     margin: 0 auto;
+    min-height: 0;
     padding: 28px 24px 36px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .admin-page-head {
+    flex: none;
     padding: 0 0 20px;
 }
 

@@ -52,9 +52,9 @@ export default function LandingView({
         () => Object.fromEntries(capabilities.map((item) => [item.id, item])),
         [capabilities]
     );
-    const visibleDashboardSections = dashboardSections.length > 0
+    const visibleDashboardSections = Array.isArray(dashboardSections)
         ? dashboardSections
-        : ['paths'];
+        : [];
     const visibleCapabilityCards = selectedCapabilities.length > 0
         ? selectedCapabilities
         : capabilities.slice(0, 3);
@@ -332,6 +332,9 @@ export default function LandingView({
                     </div>
 
                     <div className="landing-controls">
+                        <Link href="/firefly-workbench" className="landing-workbench-link glass">
+                            打开任务工作台
+                        </Link>
                         <div className="layout-selector-wrapper">
                             <button
                                 className={`workspace-config-btn glass ${showLayoutMenu ? 'active' : ''}`}
@@ -342,15 +345,15 @@ export default function LandingView({
                                 }}
                             >
                                 <span className="workspace-config-copy">
-                                    <strong>工作台布局</strong>
-                                    <small>{visibleDashboardSections.length} 个模块已显示</small>
+                                    <strong>首页卡片</strong>
+                                    <small>{visibleDashboardSections.length > 0 ? `${visibleDashboardSections.length} 个已显示` : '当前已隐藏'}</small>
                                 </span>
                                 <svg className={`chevron ${showLayoutMenu ? 'up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             </button>
 
                             {showLayoutMenu && (
                                 <div className="layout-dropdown glass-strong">
-                                    <div className="dropdown-header">首页模块</div>
+                                    <div className="dropdown-header">首页卡片</div>
                                     <div className="dropdown-list">
                                         {dashboardModuleOptions.map((item) => (
                                             <button

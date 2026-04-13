@@ -12,8 +12,20 @@ import {
     loadMessageCenterItems,
     syncStudyNoticeMessages,
 } from '@/data/messageCenter';
+import {
+    buildMcpDefinitions,
+    loadMcpDefinitionState,
+} from '@/data/mcp';
 import { upsertFireflyTask } from '@/data/fireflyTasks';
+import {
+    buildSkillDefinitions,
+    loadSkillDefinitionState,
+} from '@/data/skills';
 import { loadCampusUserProfile } from '@/data/userProfile';
+import {
+    buildCapabilityMarketAccessContextFromCatalog,
+    loadUserCapabilityInstalls,
+} from '@/data/capabilityMarket';
 import {
     CAMPUS_OPEN_FIREFLY_EVENT,
     loadWorkspacePrefs,
@@ -54,11 +66,65 @@ function normalizeThread(items = []) {
 }
 
 function shouldAttachUnreadSummary(question = '') {
-    return /未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒/.test(question);
+    const normalizedQuestion = String(question || '').trim();
+    if (!normalizedQuestion) {
+        return false;
+    }
+
+    if (/未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒|维度消息|收件箱/.test(normalizedQuestion)) {
+        return true;
+    }
+
+    return /消息/.test(normalizedQuestion) && /最近|最新|我的|帮我看|帮我查|获取|整理|汇总|报告|简报|文档/.test(normalizedQuestion);
 }
 
 function shouldAttachApprovalSummary(question = '') {
     return /审批|待办|流程|我发起|待我审批|AI ?办事/.test(question);
+}
+
+function isTroubleshootingQuestion(question = '') {
+    return /token|bearer|cookie|登录|认证|auth|enc|密钥|key|会话|失效|为什么|报错|失败|不能用/i.test(String(question || '').trim());
+}
+
+function isFailureLikeAssistantMessage(message = {}) {
+    if (message.role !== 'ai') {
+        return false;
+    }
+
+    return /任务执行失败|执行失败|登录态已失效|审批实时查询失败|未读消息查询失败|MCP|认证|Token|Bearer/.test(String(message.content || ''));
+}
+
+function buildFallbackThreadHistory(messages = [], latestQuestion = '') {
+    const compactMessages = messages
+        .filter((message) => String(message?.content || '').trim())
+        .map((message) => ({
+            role: message.role === 'ai' ? 'assistant' : 'user',
+            content: String(message.content || '').trim(),
+        }));
+
+    if (!compactMessages.length) {
+        return compactMessages;
+    }
+
+    if (isTroubleshootingQuestion(latestQuestion)) {
+        const lastFailureIndex = [...messages]
+            .map((message, index) => ({ message, index }))
+            .reverse()
+            .find(({ message }) => isFailureLikeAssistantMessage(message))?.index;
+
+        if (typeof lastFailureIndex === 'number') {
+            return messages
+                .slice(Math.max(0, lastFailureIndex - 1))
+                .filter((message) => String(message?.content || '').trim())
+                .map((message) => ({
+                    role: message.role === 'ai' ? 'assistant' : 'user',
+                    content: String(message.content || '').trim(),
+                }))
+                .slice(-4);
+        }
+    }
+
+    return compactMessages.slice(-8);
 }
 
 function formatTaskStatus(status = '') {
@@ -420,6 +486,16 @@ export default function FireflySideDrawer({
     }, []);
 
     useEffect(() => {
+        if (!Array.isArray(availableModels) || availableModels.length === 0) {
+            return;
+        }
+
+        if (!availableModels.some((item) => item.id === activeModelId)) {
+            setActiveModelId(availableModels[0].id);
+        }
+    }, [activeModelId, availableModels]);
+
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }, [currentThread, drawerOpen]);
 
@@ -579,45 +655,52 @@ export default function FireflySideDrawer({
         let unreadSummary = null;
         let approvalSummary = null;
         const userProfile = loadCampusUserProfile();
+        const marketAccessContext = buildCapabilityMarketAccessContextFromCatalog({
+            skills: buildSkillDefinitions(loadSkillDefinitionState()),
+            mcps: buildMcpDefinitions(loadMcpDefinitionState()),
+            installs: loadUserCapabilityInstalls(userProfile),
+        });
 
         if (shouldAttachUnreadSummary(question)) {
             try {
-                await syncStudyNoticeMessages({
+                const syncedMessages = await syncStudyNoticeMessages({
                     uid: userProfile.uid,
                     fid: userProfile.fid,
                 });
+                const unreadItems = Array.isArray(syncedMessages)
+                    ? syncedMessages.filter((item) => !item.read)
+                    : [];
+                unreadSummary = buildUnreadSummary(unreadItems, formatMessageTime);
             } catch {
-                // keep best-effort
+                unreadSummary = null;
             }
-            const unreadItems = loadMessageCenterItems().filter((item) => !item.read);
-            unreadSummary = buildUnreadSummary(unreadItems, formatMessageTime);
         }
 
         if (shouldAttachApprovalSummary(question)) {
             try {
-                await syncCampusApprovals({
+                const approvalState = await syncCampusApprovals({
                     uid: userProfile.uid,
                     fid: userProfile.fid,
                 });
+                approvalSummary = buildApprovalSummary({
+                    pending: approvalState.pending,
+                    pendingCount: approvalState.pendingCount,
+                    initiated: approvalState.initiated,
+                    initiatedCount: approvalState.initiatedCount,
+                    records: approvalState.records,
+                    recordsByStatus: approvalState.recordsByStatus,
+                    recordCountsByStatus: approvalState.recordCountsByStatus,
+                    formatter: formatMessageTime,
+                });
             } catch {
-                // keep best-effort
+                approvalSummary = null;
             }
-            const approvalState = loadApprovalCenterState();
-            approvalSummary = buildApprovalSummary({
-                pending: approvalState.pending,
-                pendingCount: approvalState.pendingCount,
-                initiated: approvalState.initiated,
-                initiatedCount: approvalState.initiatedCount,
-                records: approvalState.records,
-                recordsByStatus: approvalState.recordsByStatus,
-                recordCountsByStatus: approvalState.recordCountsByStatus,
-                formatter: formatMessageTime,
-            });
         }
 
         const cleanThread = currentThread.filter((item) => !item.streaming);
         const mergedContext = {
             ...(contextSnapshot || {}),
+            ...marketAccessContext,
             ...(unreadSummary ? { unreadSummary } : {}),
             ...(approvalSummary ? { approvalSummary } : {}),
         };
@@ -856,19 +939,39 @@ export default function FireflySideDrawer({
                 }
             }
 
-            const apiMessages = baseThread.map((message) => ({
-                role: message.role === 'ai' ? 'assistant' : 'user',
-                content: message.role === 'user' && typeof buildContextMessage === 'function'
-                    ? buildContextMessage(message.context, message.content)
-                        : message.role === 'user' && (message.context?.unreadSummary || message.context?.approvalSummary)
-                        ? [
-                            message.context?.unreadSummary ? `未读消息摘要：\n${message.context.unreadSummary}` : '',
-                            message.context?.approvalSummary ? `审批摘要：\n${message.context.approvalSummary}` : '',
+            const apiMessages = buildFallbackThreadHistory(baseThread, question).map((message, index, array) => {
+                const isLastUserMessage = message.role === 'user' && index === array.map((item) => item.role).lastIndexOf('user');
+                if (message.role !== 'user') {
+                    return message;
+                }
+
+                if (!isLastUserMessage) {
+                    return message;
+                }
+
+                if (typeof buildContextMessage === 'function') {
+                    return {
+                        ...message,
+                        content: buildContextMessage({ unreadSummary, approvalSummary }, message.content),
+                    };
+                }
+
+                if (unreadSummary || approvalSummary) {
+                    return {
+                        ...message,
+                        content: [
+                            unreadSummary ? `未读消息摘要：\n${unreadSummary}` : '',
+                            approvalSummary ? `审批摘要：\n${approvalSummary}` : '',
                             `用户问题：${message.content}`,
-                            '请使用清晰的 Markdown 结构，适合时用小标题和列表组织信息。如果需要返回链接，请使用 Markdown 链接格式，例如 [查看详情](/messages/xx) 或 [打开审批](https://example.com)，不要直接输出长网址。',
-                        ].filter(Boolean).join('\n\n')
-                        : message.content,
-            }));
+                            isTroubleshootingQuestion(question)
+                                ? '用户当前是在追问排障或认证问题。请优先解释失败原因、缺少的认证条件和下一步排查动作，不要继续生成审批/消息汇总文档。'
+                                : '请使用清晰的 Markdown 结构，适合时用小标题和列表组织信息。如果需要返回链接，请使用 Markdown 链接格式，例如 [查看详情](/messages/xx) 或 [打开审批](https://example.com)，不要直接输出长网址。',
+                        ].filter(Boolean).join('\n\n'),
+                    };
+                }
+
+                return message;
+            });
 
             const response = await fetch('/api/chat', {
                 method: 'POST',

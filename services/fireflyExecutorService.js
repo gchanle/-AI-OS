@@ -249,7 +249,7 @@ export async function executeFireflyTask(task, {
                     return null;
                 }
 
-                const tool = resolveFireflyTool(plannedStep.toolId);
+                const tool = resolveFireflyTool(plannedStep.toolId, contextSnapshot);
                 return {
                     plannedStep,
                     step,

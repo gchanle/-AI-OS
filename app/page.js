@@ -30,7 +30,8 @@ import { upsertCampusPreferenceMemory } from '@/data/fireflyMemory';
 import './home.css';
 
 const DASHBOARD_SECTION_ORDER = ['paths', 'modules', 'continuity', 'templates'];
-const DEFAULT_DASHBOARD_SECTIONS = ['paths'];
+const DEFAULT_DASHBOARD_SECTIONS = [];
+const DASHBOARD_LAYOUT_PREF_VERSION = 'compact-v2';
 
 export default function Home() {
   const workspaceModes = [
@@ -82,23 +83,13 @@ export default function Home() {
     } else {
       setDeepResearchEnabled(Boolean(adminBootstrap.deepResearchEnabled));
     }
-    if (Array.isArray(parsedPrefs.dashboardSections) && parsedPrefs.dashboardSections.length > 0) {
-      const storedSections = DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item));
-      const isLegacyDefault =
-        (storedSections.length === 3 &&
-          storedSections.includes('paths') &&
-          storedSections.includes('modules') &&
-          storedSections.includes('continuity') &&
-          !storedSections.includes('templates')) ||
-        (storedSections.length === 2 &&
-          storedSections.includes('paths') &&
-          storedSections.includes('modules') &&
-          !storedSections.includes('continuity') &&
-          !storedSections.includes('templates'));
-
-      setDashboardSections(
-        isLegacyDefault ? DEFAULT_DASHBOARD_SECTIONS : storedSections
-      );
+    if (parsedPrefs.dashboardLayoutVersion === DASHBOARD_LAYOUT_PREF_VERSION) {
+      const storedSections = Array.isArray(parsedPrefs.dashboardSections)
+        ? DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item))
+        : [];
+      setDashboardSections(storedSections);
+    } else {
+      setDashboardSections(DEFAULT_DASHBOARD_SECTIONS);
     }
   }, []);
 
@@ -135,6 +126,7 @@ export default function Home() {
       webSearchEnabled,
       deepResearchEnabled,
       dashboardSections,
+      dashboardLayoutVersion: DASHBOARD_LAYOUT_PREF_VERSION,
     });
     const profile = loadCampusUserProfile();
     upsertCampusPreferenceMemory({
@@ -170,6 +162,16 @@ export default function Home() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!Array.isArray(availableModels) || availableModels.length === 0) {
+      return;
+    }
+
+    if (!availableModels.some((item) => item.id === preferredModelId)) {
+      setPreferredModelId(availableModels[0].id);
+    }
+  }, [availableModels, preferredModelId]);
 
   useEffect(() => {
     const handoffRequest = consumeFireflyHandoffRequest();

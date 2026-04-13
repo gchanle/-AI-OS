@@ -1,7 +1,19 @@
 'use client';
 import Link from 'next/link';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import FireflyMark from '@/components/FireflyMark';
+import {
+    buildMcpDefinitions,
+    loadMcpDefinitionState,
+} from '@/data/mcp';
+import {
+    buildSkillDefinitions,
+    loadSkillDefinitionState,
+} from '@/data/skills';
+import {
+    buildCapabilityMarketAccessContextFromCatalog,
+    loadUserCapabilityInstalls,
+} from '@/data/capabilityMarket';
 import {
     campusCapabilities,
     capabilityMap,
@@ -33,11 +45,67 @@ import FireflyRuntimeCard from '@/components/FireflyRuntimeCard';
 import './ChatArea.css';
 
 function shouldAttachUnreadSummary(question = '') {
-    return /未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒/.test(question);
+    const normalizedQuestion = String(question || '').trim();
+    if (!normalizedQuestion) {
+        return false;
+    }
+
+    if (/未读消息|学习通|校园通知|站内信|消息中心|通知中心|未读通知|校园提醒|维度消息|收件箱/.test(normalizedQuestion)) {
+        return true;
+    }
+
+    return /消息/.test(normalizedQuestion) && /最近|最新|我的|帮我看|帮我查|获取|整理|汇总|报告|简报|文档/.test(normalizedQuestion);
 }
 
 function shouldAttachApprovalSummary(question = '') {
     return /审批|待办|流程|我发起|待我审批|AI ?办事/.test(question);
+}
+
+function isTroubleshootingQuestion(question = '') {
+    return /token|bearer|cookie|登录|认证|auth|enc|密钥|key|会话|失效|为什么|报错|失败|不能用/i.test(String(question || '').trim());
+}
+
+function isFailureLikeAssistantMessage(message = {}) {
+    if (message.role !== 'ai') {
+        return false;
+    }
+
+    return /任务执行失败|执行失败|登录态已失效|审批实时查询失败|未读消息查询失败|MCP|认证|Token|Bearer/.test(String(message.content || ''));
+}
+
+function buildFallbackChatHistory(allMessages = [], latestUserMessage = null) {
+    const trimmedMessages = allMessages
+        .filter((message) => String(message?.content || '').trim())
+        .map((message) => ({
+            role: message.role === 'ai' ? 'assistant' : 'user',
+            content: String(message.content || '').trim(),
+        }));
+
+    const latestQuestion = String(latestUserMessage?.content || '').trim();
+    if (!trimmedMessages.length) {
+        return trimmedMessages;
+    }
+
+    if (isTroubleshootingQuestion(latestQuestion)) {
+        const lastFailureIndex = [...allMessages]
+            .map((message, index) => ({ message, index }))
+            .reverse()
+            .find(({ message }) => isFailureLikeAssistantMessage(message))?.index;
+
+        if (typeof lastFailureIndex === 'number') {
+            const focusedHistory = allMessages
+                .slice(Math.max(0, lastFailureIndex - 1))
+                .filter((message) => String(message?.content || '').trim())
+                .map((message) => ({
+                    role: message.role === 'ai' ? 'assistant' : 'user',
+                    content: String(message.content || '').trim(),
+                }));
+
+            return focusedHistory.slice(-4);
+        }
+    }
+
+    return trimmedMessages.slice(-8);
 }
 
 function formatTaskStatus(status = '') {
@@ -169,6 +237,12 @@ function ensureClientSessionKey(explicitSessionId = '') {
     return created;
 }
 
+const fireflyStarterPrompts = [
+    '帮我先梳理今天最值得处理的校园事项',
+    '帮我把待办审批、未读消息和课程任务排个优先级',
+    '我接下来有一堆事情要做，你先帮我拆成执行清单',
+];
+
 export default function ChatArea({
     initialMessage,
     sessionId,
@@ -190,12 +264,13 @@ export default function ChatArea({
     const [isTyping, setIsTyping] = useState(false);
     const [activeCapabilityIds, setActiveCapabilityIds] = useState(defaultCapabilityIds);
     const [activeModelId, setActiveModelId] = useState(preferredModelId);
-    const [showCapabilityMenu, setShowCapabilityMenu] = useState(false);
+    const [showToolsMenu, setShowToolsMenu] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [runtimeRecovery, setRuntimeRecovery] = useState(null);
     const [userProfile, setUserProfile] = useState(() => ensureCampusUserProfile());
     const messagesEndRef = useRef(null);
     const textareaRef = useRef(null);
+    const toolsMenuRef = useRef(null);
     const hasInitialized = useRef(false);
     const abortControllerRef = useRef(null);
     const speechRecognitionRef = useRef(null);
@@ -249,6 +324,31 @@ export default function ChatArea({
     }, [initialThreadKey, refreshRuntimeRecovery, sessionId]);
 
     useEffect(() => subscribeCampusUserProfile(setUserProfile), []);
+
+    useEffect(() => {
+        if (!showToolsMenu) {
+            return undefined;
+        }
+
+        const handlePointerDown = (event) => {
+            if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target)) {
+                setShowToolsMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+        };
+    }, [showToolsMenu]);
+
+    const marketAccessContext = useMemo(() => (
+        buildCapabilityMarketAccessContextFromCatalog({
+            skills: buildSkillDefinitions(loadSkillDefinitionState()),
+            mcps: buildMcpDefinitions(loadMcpDefinitionState()),
+            installs: loadUserCapabilityInstalls(userProfile),
+        })
+    ), [userProfile]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -332,39 +432,38 @@ export default function ChatArea({
         if (latestUserMessage) {
             if (shouldAttachUnreadSummary(latestUserMessage.content)) {
                 try {
-                    await syncStudyNoticeMessages({
+                    const syncedMessages = await syncStudyNoticeMessages({
                         uid: activeUserProfile.uid,
                         fid: activeUserProfile.fid,
                     });
+                    const unreadItems = Array.isArray(syncedMessages)
+                        ? syncedMessages.filter((item) => !item.read)
+                        : [];
+                    unreadSummary = buildUnreadSummary(unreadItems, formatCenterMessageTime);
                 } catch {
-                    // keep local unread cache when remote sync is unavailable
+                    unreadSummary = '';
                 }
-
-                const unreadItems = loadMessageCenterItems().filter((item) => !item.read);
-                unreadSummary = buildUnreadSummary(unreadItems, formatCenterMessageTime);
             }
 
             if (shouldAttachApprovalSummary(latestUserMessage.content)) {
                 try {
-                    await syncCampusApprovals({
+                    const approvalState = await syncCampusApprovals({
                         uid: activeUserProfile.uid,
                         fid: activeUserProfile.fid,
                     });
+                    approvalSummary = buildApprovalSummary({
+                        pending: approvalState.pending,
+                        pendingCount: approvalState.pendingCount,
+                        initiated: approvalState.initiated,
+                        initiatedCount: approvalState.initiatedCount,
+                        records: approvalState.records,
+                        recordsByStatus: approvalState.recordsByStatus,
+                        recordCountsByStatus: approvalState.recordCountsByStatus,
+                        formatter: formatCenterMessageTime,
+                    });
                 } catch {
-                    // keep local approval cache when remote sync is unavailable
+                    approvalSummary = '';
                 }
-
-                const approvalState = loadApprovalCenterState();
-                approvalSummary = buildApprovalSummary({
-                    pending: approvalState.pending,
-                    pendingCount: approvalState.pendingCount,
-                    initiated: approvalState.initiated,
-                    initiatedCount: approvalState.initiatedCount,
-                    records: approvalState.records,
-                    recordsByStatus: approvalState.recordsByStatus,
-                    recordCountsByStatus: approvalState.recordCountsByStatus,
-                    formatter: formatCenterMessageTime,
-                });
             }
         }
 
@@ -461,6 +560,7 @@ export default function ChatArea({
 
             const mergedRuntimeContext = {
                 ...baseRuntimeContext,
+                ...marketAccessContext,
                 ...((baseRuntimeContext?.resumeMode && runtimeRecoveryContext?.summary) ? {
                     runtimeRecoverySummary: runtimeRecoveryContext.summary,
                     parentTaskId: runtimeRecoveryContext.task?.id || baseRuntimeContext.parentTaskId || '',
@@ -490,7 +590,29 @@ export default function ChatArea({
                     signal: abortControllerRef.current.signal,
                 });
 
-                if (agentResponse.ok && agentResponse.body) {
+                if (!agentResponse.ok) {
+                    let agentErrorMessage = `萤火虫接口异常（${agentResponse.status}）`;
+
+                    try {
+                        const payload = await agentResponse.json();
+                        if (payload?.error) {
+                            agentErrorMessage = payload.error;
+                        }
+                    } catch {
+                        try {
+                            const text = await agentResponse.text();
+                            if (text) {
+                                agentErrorMessage = text;
+                            }
+                        } catch {
+                            // ignore response parsing errors
+                        }
+                    }
+
+                    throw new Error(agentErrorMessage);
+                }
+
+                if (agentResponse.body) {
                     const reader = agentResponse.body.getReader();
                     const decoder = new TextDecoder();
                     let buffer = '';
@@ -524,6 +646,10 @@ export default function ChatArea({
                                         resumeContext: mergedRuntimeContext,
                                     };
                                     upsertFireflyTask(latestTask);
+                                }
+
+                                if (parsed.type === 'error') {
+                                    throw new Error(parsed.message || '萤火虫任务执行失败，请稍后重试。');
                                 }
 
                                 if (parsed.type === 'unhandled') {
@@ -563,17 +689,19 @@ export default function ChatArea({
                                         agentHandled = true;
                                         finalTask = parsed.task
                                             ? {
-                                            ...parsed.task,
-                                            sessionId: runtimeThreadKey,
-                                            resumeContext: mergedRuntimeContext,
-                                        }
-                                        : (finalTask || latestTask);
+                                                ...parsed.task,
+                                                sessionId: runtimeThreadKey,
+                                                resumeContext: mergedRuntimeContext,
+                                            }
+                                            : (finalTask || latestTask);
                                         finalReply = parsed.reply || finalReply || buildStreamingTaskContent(finalTask, 'completed');
                                     }
                                     continue;
                                 }
-                            } catch {
-                                // ignore malformed chunks
+                            } catch (streamError) {
+                                if (streamError instanceof Error) {
+                                    throw streamError;
+                                }
                             }
                         }
                     }
@@ -627,10 +755,7 @@ export default function ChatArea({
                 }
             }
 
-            let apiMessages = allMessages.map((m) => ({
-                role: m.role === 'ai' ? 'assistant' : 'user',
-                content: m.content,
-            }));
+            let apiMessages = buildFallbackChatHistory(allMessages, latestUserMessage);
 
             if (latestUserMessage && (unreadSummary || approvalSummary || memorySnapshot.markdown)) {
                 const contextSections = ['你可以访问当前校园工作台中已经同步的业务数据。'];
@@ -639,7 +764,9 @@ export default function ChatArea({
                 if (memorySnapshot.markdown) contextSections.push(memorySnapshot.markdown);
                 contextSections.push(
                     `用户问题：${latestUserMessage.content}`,
-                    '请优先基于以上摘要直接回答，不要再说“系统未接入”或“无法获取数据”。请使用清晰的 Markdown 结构，适合时用小标题和列表组织信息。如果需要给用户返回链接，请使用 Markdown 链接格式，例如 [查看详情](/messages/xx) 或 [打开审批](https://example.com)，不要直接输出长网址。若摘要显示为空，就明确告诉用户当前没有对应数据。'
+                    isTroubleshootingQuestion(latestUserMessage.content)
+                        ? '用户当前是在追问排障或认证问题。请优先解释失败原因、缺少的认证条件和下一步排查动作，不要继续生成审批/消息汇总文档。'
+                        : '请优先基于以上摘要直接回答，不要再说“系统未接入”或“无法获取数据”。请使用清晰的 Markdown 结构，适合时用小标题和列表组织信息。如果需要给用户返回链接，请使用 Markdown 链接格式，例如 [查看详情](/messages/xx) 或 [打开审批](https://example.com)，不要直接输出长网址。若摘要显示为空，就明确告诉用户当前没有对应数据。'
                 );
 
                 const targetIndex = apiMessages.map((message, index) => ({ ...message, index })).reverse().find((message) => message.role === 'user');
@@ -666,7 +793,25 @@ export default function ChatArea({
             });
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                let chatErrorMessage = `聊天接口异常（${response.status}）`;
+
+                try {
+                    const payload = await response.json();
+                    if (payload?.error) {
+                        chatErrorMessage = payload.error;
+                    }
+                } catch {
+                    try {
+                        const text = await response.text();
+                        if (text) {
+                            chatErrorMessage = text;
+                        }
+                    } catch {
+                        // ignore response parsing errors
+                    }
+                }
+
+                throw new Error(chatErrorMessage);
             }
 
             const reader = response.body.getReader();
@@ -742,7 +887,10 @@ export default function ChatArea({
         } catch (error) {
             if (error.name === 'AbortError') return;
             console.error('Chat error:', error);
-            updateStreamingMessage('⚠️ 网络连接异常，请检查网络后重试。', false);
+            const message = error instanceof Error && error.message
+                ? `⚠️ ${error.message}`
+                : '⚠️ 网络连接异常，请检查网络后重试。';
+            updateStreamingMessage(message, false);
         } finally {
             setIsTyping(false);
         }
@@ -766,6 +914,7 @@ export default function ChatArea({
     const handleSend = () => {
         const message = inputValue.trim();
         if (!message || isTyping) return;
+        setShowToolsMenu(false);
         const userMsg = { role: 'user', content: message, time: new Date() };
         const newMessages = [...messages.filter(m => !m.streaming), userMsg];
         setMessages(newMessages);
@@ -846,30 +995,102 @@ export default function ChatArea({
         event.stopPropagation();
     };
 
+    const handlePrefillPrompt = (prompt) => {
+        setInputValue(prompt);
+        requestAnimationFrame(() => {
+            textareaRef.current?.focus();
+        });
+    };
+
     const firstUserMessage = messages.find((message) => message.role === 'user')?.content || initialMessage || '新的校园任务';
     const workspaceTitle = firstUserMessage.length > 40 ? `${firstUserMessage.slice(0, 40)}...` : firstUserMessage;
     const activeCapabilities = activeCapabilityIds.map((id) => capabilityMap[id]).filter(Boolean);
     const activeModel = resolveChatModel(activeModelId || preferredModelId);
     const capabilitySummary = activeCapabilities.map((capability) => capability.name).join('、');
     const isMinimal = variant === 'minimal';
-    const workspaceBadges = [
-        sessionId ? '历史会话' : '当前工作区',
-        'Agent Runtime',
-        activeModel?.label || '默认模型',
-        `${activeCapabilities.length} 个校园能力`,
-    ];
+    const hasConversation = messages.length > 0 || isTyping;
+    const runtimeRecoveryLabel = runtimeRecovery?.task?.title || runtimeRecovery?.session?.title || '最近任务';
+    const runtimeRecoveryStatus = runtimeRecovery?.task?.status || runtimeRecovery?.run?.phase || '可恢复';
+    const workspaceBadges = hasConversation
+        ? [
+            sessionId ? '历史会话' : '当前对话',
+            activeModel?.label || '默认模型',
+            `${activeCapabilities.length} 个校园能力`,
+        ]
+        : [
+            sessionId ? '历史会话' : '当前工作区',
+            'Agent Runtime',
+            activeModel?.label || '默认模型',
+            `${activeCapabilities.length} 个校园能力`,
+        ];
+
+    const renderToolsMenu = () => (
+        <div className="chat-floating-menu glass-strong tools-menu">
+            <div className="chat-floating-section">
+                <div className="chat-floating-section-title">对话设置</div>
+                <label className="chat-floating-select">
+                    <span>模型</span>
+                    <select value={activeModelId} onChange={handleModelChange}>
+                        {availableModels.map((model) => (
+                            <option key={model.id} value={model.id}>
+                                {model.label}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <div className="chat-floating-toggle-row">
+                    <button
+                        className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
+                        type="button"
+                        onClick={() => onWebSearchChange?.(!webSearchEnabled)}
+                    >
+                        联网搜索
+                    </button>
+                    <button
+                        className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
+                        type="button"
+                        onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
+                    >
+                        深度研究
+                    </button>
+                </div>
+                <button
+                    className={`chat-floating-action ${isListening ? 'active' : ''}`}
+                    type="button"
+                    onClick={handleVoiceInput}
+                >
+                    <strong>{isListening ? '停止语音输入' : '语音输入'}</strong>
+                    <span>{isListening ? '正在监听你的语音' : '把语音转成输入内容'}</span>
+                </button>
+            </div>
+            <div className="chat-floating-section">
+                <div className="chat-floating-section-title">已接入能力</div>
+                {campusCapabilities.map((capability) => (
+                    <button
+                        key={capability.id}
+                        type="button"
+                        className={`chat-floating-item ${activeCapabilityIds.includes(capability.id) ? 'active' : ''}`}
+                        onClick={() => handleCapabilityToggle(capability.id)}
+                    >
+                        <strong>{capability.name}</strong>
+                        <span>{capability.source}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div className={`chat-area ${isMinimal ? 'minimal' : ''}`}>
             <div className="messages-container">
                 <div className="chat-container-inner">
-                    <div className="chat-workspace-head glass">
+                    <div className={`chat-workspace-head glass ${hasConversation ? 'compact' : ''}`}>
                         <div className="chat-workspace-copy">
                             {!isMinimal && (
                                 <span className="chat-workspace-badge">萤火虫工作区</span>
                             )}
                             <h2 className="chat-workspace-title">{workspaceTitle}</h2>
-                            {!isMinimal && (
+                            {!isMinimal && !hasConversation && (
                                 <p className="chat-workspace-desc">
                                     围绕当前问题组织校园上下文，让对话、任务和后续动作保持在同一个工作面板里。
                                 </p>
@@ -892,30 +1113,16 @@ export default function ChatArea({
                         <div className="chat-runtime-strip glass">
                             <div className="chat-runtime-strip-copy">
                                 <span className="chat-runtime-strip-kicker">恢复</span>
-                                <strong>{runtimeRecovery.task?.title || runtimeRecovery.session?.title || '最近任务'}</strong>
-                                <span>
-                                    {runtimeRecovery.task?.status || runtimeRecovery.run?.phase || '可恢复'}
-                                </span>
+                                <strong>{runtimeRecoveryLabel}</strong>
+                                <span>上次任务仍可继续</span>
                             </div>
                             <div className="chat-runtime-strip-actions">
-                                {runtimeRecovery.summary ? (
-                                    <span className="chat-runtime-strip-summary">
-                                        {runtimeRecovery.summary
-                                            .replace(/^## 服务端运行恢复\s*/u, '')
-                                            .split('\n')
-                                            .filter(Boolean)[0] || '已记录最近一次服务端运行轨迹。'}
-                                    </span>
-                                ) : null}
-                                {runtimeRecovery.task?.selectedSkillLabels?.length ? (
-                                    <span className="chat-runtime-strip-capabilities">
-                                        {runtimeRecovery.task.selectedSkillLabels.join('、')}
-                                    </span>
-                                ) : null}
+                                <span className="chat-runtime-strip-summary">{runtimeRecoveryStatus}</span>
                                 <Link
                                     href={`/runtime?threadKey=${encodeURIComponent(runtimeRecovery.threadKey)}`}
                                     className="chat-runtime-strip-link"
                                 >
-                                    运行台账
+                                    查看详情
                                 </Link>
                             </div>
                         </div>
@@ -926,7 +1133,19 @@ export default function ChatArea({
                             <div className="empty-icon glass-strong">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                             </div>
-                            <p>我是萤火虫，准备好为你整理校园事务、学习任务和系统信息了。</p>
+                            <p>我是萤火虫，可以先帮你梳理待办、补齐上下文，再把结果整理成清楚的动作清单。</p>
+                            <div className="chat-empty-actions">
+                                {fireflyStarterPrompts.map((prompt) => (
+                                    <button
+                                        key={prompt}
+                                        type="button"
+                                        className="chat-empty-action"
+                                        onClick={() => handlePrefillPrompt(prompt)}
+                                    >
+                                        {prompt}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     ) : (
                         messages.map((msg, idx) => (
@@ -952,11 +1171,6 @@ export default function ChatArea({
                                             <span className="msg-time">
                                                 {msg.streaming ? '正在生成' : formatTime(msg.time)}
                                             </span>
-                                            {msg.role === 'ai' && msg.messageKind !== 'runtime-trace' && (
-                                                <span className="msg-model-note">
-                                                    该回复来自“{resolveChatModel(msg.modelId || activeModelId).label}”，请注意甄别
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -1010,61 +1224,15 @@ export default function ChatArea({
                                 onClick={preventComposerFocusSteal}
                             >
                                 <div className="chat-composer-tools">
-                                    <button className="chat-tool-btn" type="button" title="添加附件">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                                    </button>
-                                    <label className="chat-composer-select">
-                                        <span>模型</span>
-                                        <select value={activeModelId} onChange={handleModelChange}>
-                                            {availableModels.map((model) => (
-                                                <option key={model.id} value={model.id}>
-                                                    {model.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                <button
-                                    className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
-                                    type="button"
-                                    onClick={() => onWebSearchChange?.(!webSearchEnabled)}
-                                >
-                                        联网搜索
-                                    </button>
-                                    <button
-                                        className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
-                                        type="button"
-                                        onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
-                                    >
-                                        深度研究
-                                    </button>
-                                    <button
-                                        className={`chat-tool-btn ${isListening ? 'active' : ''}`}
-                                        type="button"
-                                        title="语音输入"
-                                        onClick={handleVoiceInput}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-                                    </button>
-                                    <div className="chat-menu-wrap">
-                                        <button className="chat-tool-chip" type="button" onClick={() => setShowCapabilityMenu((prev) => !prev)}>
-                                            接入
+                                    <div className="chat-menu-wrap" ref={toolsMenuRef}>
+                                        <button className={`chat-tool-chip ${showToolsMenu ? 'active' : ''}`} type="button" onClick={() => setShowToolsMenu((prev) => !prev)}>
+                                            工具
                                         </button>
-                                        {showCapabilityMenu && (
-                                            <div className="chat-floating-menu glass-strong">
-                                                {campusCapabilities.map((capability) => (
-                                                    <button
-                                                        key={capability.id}
-                                                        type="button"
-                                                        className={`chat-floating-item ${activeCapabilityIds.includes(capability.id) ? 'active' : ''}`}
-                                                        onClick={() => handleCapabilityToggle(capability.id)}
-                                                    >
-                                                        <strong>{capability.name}</strong>
-                                                        <span>{capability.source}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                                        {showToolsMenu && renderToolsMenu()}
                                     </div>
+                                    <span className="chat-inline-config" title={capabilitySummary}>
+                                        {activeModel?.label || '默认模型'} · {activeCapabilities.length} 个能力
+                                    </span>
                                 </div>
                                 <button
                                     className={`chat-send ${inputValue.trim() ? 'active' : ''}`}
@@ -1085,7 +1253,7 @@ export default function ChatArea({
                             <textarea
                                 ref={textareaRef}
                                 className="chat-textarea"
-                                placeholder="继续推进当前校园任务，或补充新的上下文..."
+                                placeholder="描述目标、补充背景，或直接粘贴待整理内容..."
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={handleKeyDown}
@@ -1097,60 +1265,14 @@ export default function ChatArea({
                                 onClick={preventComposerFocusSteal}
                             >
                                 <div className="chat-composer-tools">
-                                    <label className="chat-composer-select">
-                                        <span>模型</span>
-                                        <select value={activeModelId} onChange={handleModelChange}>
-                                            {availableModels.map((model) => (
-                                                <option key={model.id} value={model.id}>
-                                                    {model.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <button
-                                        className={`chat-tool-chip ${webSearchEnabled ? 'active' : ''}`}
-                                        type="button"
-                                        onClick={() => onWebSearchChange?.(!webSearchEnabled)}
-                                    >
-                                        联网搜索
-                                    </button>
-                                    <button
-                                        className={`chat-tool-chip ${deepResearchEnabled ? 'active' : ''}`}
-                                        type="button"
-                                        onClick={() => onDeepResearchChange?.(!deepResearchEnabled)}
-                                    >
-                                        深度研究
-                                    </button>
-                                    <button
-                                        className={`chat-tool-btn ${isListening ? 'active' : ''}`}
-                                        type="button"
-                                        title="语音输入"
-                                        onClick={handleVoiceInput}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
-                                    </button>
-                                    <div className="chat-menu-wrap">
-                                        <button className="chat-tool-chip" type="button" onClick={() => setShowCapabilityMenu((prev) => !prev)}>
-                                            接入
+                                    <div className="chat-menu-wrap" ref={toolsMenuRef}>
+                                        <button className={`chat-tool-chip ${showToolsMenu ? 'active' : ''}`} type="button" onClick={() => setShowToolsMenu((prev) => !prev)}>
+                                            工具
                                         </button>
-                                        {showCapabilityMenu && (
-                                            <div className="chat-floating-menu glass-strong">
-                                                {campusCapabilities.map((capability) => (
-                                                    <button
-                                                        key={capability.id}
-                                                        type="button"
-                                                        className={`chat-floating-item ${activeCapabilityIds.includes(capability.id) ? 'active' : ''}`}
-                                                        onClick={() => handleCapabilityToggle(capability.id)}
-                                                    >
-                                                        <strong>{capability.name}</strong>
-                                                        <span>{capability.source}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                                        {showToolsMenu && renderToolsMenu()}
                                     </div>
                                     <span className="chat-inline-config" title={capabilitySummary}>
-                                        已接入 {activeCapabilities.length} 个校园能力
+                                        {activeModel?.label || '默认模型'} · {activeCapabilities.length} 个能力
                                     </span>
                                 </div>
                                 <button
@@ -1165,7 +1287,7 @@ export default function ChatArea({
                             </div>
                         </div>
                     )}
-                    <div className="chat-footer-hint">AI 生成内容仅供参考，涉及制度与流程时请以校园正式通知为准。</div>
+                    <div className="chat-footer-hint">Enter 发送，Shift + Enter 换行。AI 生成内容仅供参考，涉及制度与流程时请以校园正式通知为准。</div>
                 </div>
             </div>
         </div>

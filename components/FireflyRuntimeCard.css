@@ -94,6 +94,97 @@
     line-height: 1.6;
 }
 
+.firefly-runtime-card-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    width: fit-content;
+    margin-top: 10px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(24, 90, 188, 0.07);
+    color: rgba(24, 90, 188, 0.9);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.firefly-runtime-stage-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.firefly-runtime-stage-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 11px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    background: rgba(255, 255, 255, 0.72);
+    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.firefly-runtime-stage-item strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-runtime-stage-item span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.firefly-runtime-stage-item.current {
+    background: linear-gradient(180deg, rgba(232, 241, 255, 0.92), rgba(255, 255, 255, 0.92));
+    border-color: rgba(24, 90, 188, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(24, 90, 188, 0.04);
+}
+
+.firefly-runtime-stage-item.current strong,
+.firefly-runtime-stage-item.current span {
+    color: rgba(24, 90, 188, 0.95);
+}
+
+.firefly-runtime-stage-item.done {
+    background: linear-gradient(180deg, rgba(240, 251, 247, 0.96), rgba(255, 255, 255, 0.94));
+    border-color: rgba(31, 141, 109, 0.14);
+}
+
+.firefly-runtime-stage-item.done strong,
+.firefly-runtime-stage-item.done span {
+    color: #1f8d6d;
+}
+
+.firefly-runtime-stage-item.failed {
+    background: linear-gradient(180deg, rgba(255, 243, 240, 0.98), rgba(255, 255, 255, 0.94));
+    border-color: rgba(196, 73, 57, 0.14);
+}
+
+.firefly-runtime-stage-item.failed strong,
+.firefly-runtime-stage-item.failed span {
+    color: #c44939;
+}
+
+.firefly-runtime-stage-item.upcoming {
+    background: rgba(255, 255, 255, 0.62);
+    border-style: dashed;
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.firefly-runtime-stage-item.upcoming strong {
+    color: var(--text-secondary);
+}
+
+.firefly-runtime-stage-item.upcoming span {
+    color: var(--text-tertiary);
+}
+
 .firefly-runtime-card-stats {
     display: flex;
     flex-wrap: wrap;
@@ -141,6 +232,60 @@
     align-items: stretch;
     gap: 8px;
     margin-top: 9px;
+}
+
+.firefly-runtime-highlight-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin-top: 12px;
+    padding: 12px 13px;
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.96));
+    border: 1px solid rgba(24, 90, 188, 0.09);
+}
+
+.firefly-runtime-highlight-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-runtime-highlight-copy span {
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-runtime-highlight-copy strong {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.firefly-runtime-highlight-copy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.firefly-runtime-highlight-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(24, 90, 188, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .firefly-runtime-card-pipeline-item {
@@ -286,6 +431,14 @@
     .firefly-runtime-card {
         min-width: 0;
         max-width: 100%;
+    }
+
+    .firefly-runtime-stage-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .firefly-runtime-highlight-card {
+        grid-template-columns: 1fr;
     }
 
     .firefly-runtime-card-pipeline {

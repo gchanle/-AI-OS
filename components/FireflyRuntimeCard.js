@@ -178,6 +178,88 @@ function buildOutputItems(task = {}, compact = false) {
     }));
 }
 
+function buildNarrativeLabel(task = {}, progress = {}) {
+    if (task.status === 'awaiting_approval') {
+        return '等待确认';
+    }
+    if (task.status === 'failed') {
+        return '执行中断';
+    }
+    if (task.status === 'completed' && progress.failedSteps > 0) {
+        return '部分完成';
+    }
+    if (task.status === 'completed') {
+        return '已生成结果';
+    }
+    if (task.status === 'running') {
+        return '正在处理';
+    }
+    if (task.status === 'planning') {
+        return '已形成计划';
+    }
+    return '处理中';
+}
+
+function buildStageOverview(task = {}, progress = {}, outputItems = []) {
+    const hasOutputs = outputItems.length > 0;
+
+    return [
+        {
+            id: 'stage-plan',
+            title: '任务拆解',
+            state: task.status === 'planning' ? 'current' : 'done',
+            description: `${progress.stepCount || 0} 个步骤`,
+        },
+        {
+            id: 'stage-execute',
+            title: task.status === 'awaiting_approval' ? '等待确认' : '执行处理',
+            state: task.status === 'failed'
+                ? 'failed'
+                : (task.status === 'planning' ? 'upcoming' : 'current'),
+            description: task.status === 'awaiting_approval'
+                ? '需要你确认后继续'
+                : progress.runningSteps > 0
+                    ? `${progress.runningSteps} 个步骤进行中`
+                    : progress.failedSteps > 0
+                        ? `${progress.failedSteps} 个步骤失败`
+                        : '执行状态稳定',
+        },
+        {
+            id: 'stage-result',
+            title: '生成结果',
+            state: hasOutputs
+                ? 'done'
+                : (task.status === 'completed' ? 'current' : 'upcoming'),
+            description: hasOutputs ? `${outputItems.length} 个结果对象` : '等待生成可用结果',
+        },
+    ];
+}
+
+function buildHighlightCard(task = {}, outputItems = []) {
+    if (task.status === 'awaiting_approval') {
+        return {
+            eyebrow: '需要确认',
+            title: '当前任务已准备好继续执行',
+            description: '系统已经完成前序整理，确认后可以进入下一步执行。',
+            actionLabel: '查看运行详情',
+            href: task.threadKey ? `/runtime?threadKey=${encodeURIComponent(task.threadKey)}` : '',
+        };
+    }
+
+    const primaryOutput = outputItems[0];
+    if (primaryOutput) {
+        return {
+            eyebrow: '已生成结果',
+            title: primaryOutput.title,
+            description: primaryOutput.description || '本轮已经生成结构化结果，可继续查看或承接后续动作。',
+            actionLabel: primaryOutput.href ? '打开结果' : '',
+            href: primaryOutput.href || '',
+        };
+    }
+
+    return null;
+}
+
 function SectionCard({
     id,
     title,
@@ -248,6 +330,9 @@ export default function FireflyRuntimeCard({
     const toolItems = buildToolItems(task, webMetrics);
     const progressItems = buildProgressItems(task);
     const outputItems = buildOutputItems(task, compact);
+    const narrativeLabel = buildNarrativeLabel(task, progress);
+    const stageOverview = buildStageOverview(task, progress, outputItems);
+    const highlightCard = buildHighlightCard(task, outputItems);
 
     return (
         <div className={`firefly-runtime-card ${compact ? 'compact' : ''}`}>
@@ -272,9 +357,20 @@ export default function FireflyRuntimeCard({
                 </button>
             </div>
 
+            <div className="firefly-runtime-card-kicker">{narrativeLabel}</div>
+
             {task.resultSummary ? (
                 <div className="firefly-runtime-card-summary">{task.resultSummary}</div>
             ) : null}
+
+            <div className="firefly-runtime-stage-strip">
+                {stageOverview.map((stage) => (
+                    <div key={stage.id} className={`firefly-runtime-stage-item ${stage.state}`}>
+                        <strong>{stage.title}</strong>
+                        <span>{stage.description}</span>
+                    </div>
+                ))}
+            </div>
 
             <div className="firefly-runtime-card-stats">
                 <span className="firefly-runtime-card-stat">步骤 {progress.completedSteps}/{progress.stepCount || 0}</span>
@@ -289,6 +385,21 @@ export default function FireflyRuntimeCard({
                     <span className="firefly-runtime-card-stat danger">失败 {progress.failedSteps}</span>
                 ) : null}
             </div>
+
+            {highlightCard ? (
+                <div className="firefly-runtime-highlight-card">
+                    <div className="firefly-runtime-highlight-copy">
+                        <span>{highlightCard.eyebrow}</span>
+                        <strong>{highlightCard.title}</strong>
+                        <p>{highlightCard.description}</p>
+                    </div>
+                    {highlightCard.href ? (
+                        <a href={highlightCard.href} className="firefly-runtime-highlight-link">
+                            {highlightCard.actionLabel || '查看结果'}
+                        </a>
+                    ) : null}
+                </div>
+            ) : null}
 
             {webMetrics ? (
                 <div className="firefly-runtime-card-pipeline">
@@ -313,30 +424,30 @@ export default function FireflyRuntimeCard({
                 <div className="firefly-runtime-card-body">
                     <SectionCard
                         id="plan"
-                        title="任务规划"
-                        summary="展示本轮任务拆成了哪些阶段"
+                        title="任务拆解"
+                        summary="本轮任务被整理成的阶段"
                         items={planItems}
                         defaultOpen={task.status === 'planning' || task.status === 'running'}
                     />
                     <SectionCard
                         id="tools"
-                        title="工具调用"
-                        summary="只展示用户可理解的外部执行链路"
+                        title="执行方式"
+                        summary="当前用了哪些能力和处理链路"
                         items={toolItems}
                         defaultOpen={Boolean(webMetrics)}
                     />
                     <SectionCard
                         id="progress"
-                        title="执行进展"
-                        summary="查看最近阶段推进情况"
+                        title="最近进展"
+                        summary="最近几个阶段的推进情况"
                         items={progressItems}
                         defaultOpen={task.status === 'running' || task.status === 'awaiting_approval'}
                         dense
                     />
                     <SectionCard
                         id="outputs"
-                        title="当前产出"
-                        summary="本轮已生成的中间结果"
+                        title="结果列表"
+                        summary="本轮已经生成的结果对象"
                         items={outputItems}
                     />
                 </div>

@@ -161,6 +161,27 @@
     flex-wrap: wrap;
 }
 
+.landing-workbench-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 650;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.landing-workbench-link:hover {
+    color: var(--text-primary);
+    border-color: rgba(0, 102, 204, 0.14);
+    box-shadow: 0 12px 24px rgba(0, 64, 140, 0.08);
+    transform: translateY(-1px);
+}
+
 .layout-selector-wrapper,
 .agent-selector-wrapper,
 .chat-menu-wrap {

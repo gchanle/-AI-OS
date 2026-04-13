@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import CampusUserBootstrap from '@/components/CampusUserBootstrap';
 import {
+    getDefaultCampusUserProfile,
     ensureCampusUserProfile,
     hasCampusAdminAccess,
     subscribeCampusUserProfile,
 } from '@/data/userProfile';
 import {
+    getDefaultAdminConsoleSettings,
     loadAdminConsoleSettings,
     subscribeAdminConsoleSettings,
 } from '@/data/adminConsole';
@@ -23,13 +26,20 @@ const adminNavItems = [
 
 export default function AdminShell({ children }) {
     const pathname = usePathname();
-    const [profile, setProfile] = useState(() => ensureCampusUserProfile());
-    const [schoolName, setSchoolName] = useState(() => loadAdminConsoleSettings().schoolProfile.name);
+    const [profile, setProfile] = useState(() => getDefaultCampusUserProfile());
+    const [schoolName, setSchoolName] = useState(() => getDefaultAdminConsoleSettings().schoolProfile.name);
 
-    useEffect(() => subscribeCampusUserProfile(setProfile), []);
-    useEffect(() => subscribeAdminConsoleSettings((settings) => {
-        setSchoolName(settings.schoolProfile.name);
-    }), []);
+    useEffect(() => {
+        setProfile(ensureCampusUserProfile());
+        return subscribeCampusUserProfile(setProfile);
+    }, []);
+
+    useEffect(() => {
+        setSchoolName(loadAdminConsoleSettings().schoolProfile.name);
+        return subscribeAdminConsoleSettings((settings) => {
+            setSchoolName(settings.schoolProfile.name);
+        });
+    }, []);
 
     const canAccess = hasCampusAdminAccess(profile);
     const currentNav = useMemo(
@@ -54,6 +64,7 @@ export default function AdminShell({ children }) {
 
     return (
         <div className="admin-root">
+            <CampusUserBootstrap />
             <header className="admin-topbar">
                 <div className="admin-topbar-inner">
                     <Link href="/admin" className="admin-brand">

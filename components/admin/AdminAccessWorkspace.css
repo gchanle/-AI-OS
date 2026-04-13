@@ -1,10 +1,15 @@
 .admin-access-workspace {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    height: 100%;
+    min-height: 0;
     gap: 16px;
+    overflow: hidden;
 }
 
 .admin-access-tabs {
+    flex: none;
     padding: 14px;
     border-radius: 22px;
 }
@@ -40,4 +45,16 @@
     margin-top: 12px;
     color: var(--text-secondary);
     font-size: 13px;
+}
+
+.admin-access-pane {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 12px;
+}
+
+.admin-access-pane.catalog {
+    padding-bottom: 0;
 }

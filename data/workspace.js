@@ -8,7 +8,30 @@ export const capabilityMap = Object.fromEntries(
   campusCapabilities.map((item) => [item.id, item])
 );
 
-export const chatModelCandidates = [
+function parseModelCandidate(raw = '') {
+  const parts = String(raw || '').split('|').map((item) => item.trim()).filter(Boolean);
+  if (!parts.length) {
+    return null;
+  }
+
+  const [id, label, summary] = parts;
+  return {
+    id,
+    label: label || id,
+    summary: summary || '本地覆盖模型',
+  };
+}
+
+function loadEnvModelCandidates() {
+  const raw = process.env.NEXT_PUBLIC_DASHSCOPE_MODEL_CANDIDATES || '';
+
+  return raw
+    .split(',')
+    .map((item) => parseModelCandidate(item))
+    .filter(Boolean);
+}
+
+const fallbackChatModelCandidates = [
   { id: 'firefly-general-demo', label: 'Firefly General Demo', summary: '默认演示模型' },
   { id: 'firefly-knowledge-demo', label: 'Firefly Knowledge Demo', summary: '长文与知识整理演示' },
   { id: 'firefly-reasoner-demo', label: 'Firefly Reasoner Demo', summary: '复杂推理演示' },
@@ -16,9 +39,17 @@ export const chatModelCandidates = [
   { id: 'firefly-lite-demo', label: 'Firefly Lite Demo', summary: '轻量响应演示' },
 ];
 
+const envChatModelCandidates = loadEnvModelCandidates();
+
+export const chatModelCandidates = envChatModelCandidates.length > 0
+  ? envChatModelCandidates
+  : fallbackChatModelCandidates;
+
 export const chatModelOptions = chatModelCandidates;
 
-export const defaultChatModelId = 'firefly-general-demo';
+export const defaultChatModelId = process.env.NEXT_PUBLIC_DEFAULT_CHAT_MODEL_ID
+  || chatModelCandidates[0]?.id
+  || 'firefly-general-demo';
 
 export const chatModelMap = Object.fromEntries(
   chatModelCandidates.map((item) => [item.id, item])

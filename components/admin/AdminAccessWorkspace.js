@@ -59,16 +59,30 @@ export default function AdminAccessWorkspace({
                 <p>{currentTab.summary}</p>
             </section>
 
-            {activeTab === 'policy' ? <SchoolConsolePanel /> : null}
-            {activeTab === 'catalog' ? (
-                <CapabilityAccessCenter
-                    initialSkillPackages={initialSkillPackages}
-                    initialMcpPackages={initialMcpPackages}
-                    initialCliPackages={initialCliPackages}
-                />
+            {activeTab === 'policy' ? (
+                <div className="admin-access-pane">
+                    <SchoolConsolePanel />
+                </div>
             ) : null}
-            {activeTab === 'agent' ? <AdminAgentRuntimePanel /> : null}
-            {activeTab === 'runtime' ? <AdminRuntimePanel initialRuntime={initialRuntime} /> : null}
+            {activeTab === 'catalog' ? (
+                <div className="admin-access-pane catalog">
+                    <CapabilityAccessCenter
+                        initialSkillPackages={initialSkillPackages}
+                        initialMcpPackages={initialMcpPackages}
+                        initialCliPackages={initialCliPackages}
+                    />
+                </div>
+            ) : null}
+            {activeTab === 'agent' ? (
+                <div className="admin-access-pane">
+                    <AdminAgentRuntimePanel />
+                </div>
+            ) : null}
+            {activeTab === 'runtime' ? (
+                <div className="admin-access-pane">
+                    <AdminRuntimePanel initialRuntime={initialRuntime} />
+                </div>
+            ) : null}
         </div>
     );
 }

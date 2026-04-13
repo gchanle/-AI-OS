@@ -456,12 +456,12 @@ export async function runFireflyAgentTask({
     });
 }
 
-function buildReplaySelectedSkills(steps = []) {
+function buildReplaySelectedSkills(steps = [], contextSnapshot = {}) {
     const selected = [];
     const seen = new Set();
 
     steps.forEach((step) => {
-        const tool = resolveFireflyTool(step.toolId || step.skillId || '');
+        const tool = resolveFireflyTool(step.toolId || step.skillId || '', contextSnapshot);
         if (!tool || seen.has(tool.id)) {
             return;
         }
@@ -553,7 +553,7 @@ function buildReplayPlan(task = {}, mode = 'full', stepId = '') {
         return null;
     }
 
-    const selectedSkills = buildReplaySelectedSkills(replaySteps);
+    const selectedSkills = buildReplaySelectedSkills(replaySteps, task.contextSnapshot || {});
     const preferredToolIds = replaySteps.map((step) => step.toolId || step.skillId).filter(Boolean);
     const replayTitle = mode === 'failed_only'
         ? `失败重试：${task.title || '萤火虫任务'}`

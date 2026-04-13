@@ -4,6 +4,7 @@ import {
     campusModules,
     auxiliaryCapabilities,
 } from '@/data/campusPlatform';
+import { defaultChatModelId } from '@/data/workspace';
 
 export const ADMIN_CONSOLE_SETTINGS_KEY = 'campus_admin_console_v1';
 export const ADMIN_CONSOLE_EVENT = 'campus-admin-console-sync';
@@ -55,7 +56,7 @@ const DEFAULT_SETTINGS = {
         },
     ],
     defaultFirefly: {
-        modelId: 'firefly-general-demo',
+        modelId: defaultChatModelId,
         capabilityIds: ['services', 'research', 'assistant'],
         webSearchEnabled: false,
         deepResearchEnabled: false,
@@ -172,6 +173,10 @@ export function loadAdminConsoleSettings() {
         console.error('Failed to restore admin console settings:', error);
         return normalizeSettings(DEFAULT_SETTINGS);
     }
+}
+
+export function getDefaultAdminConsoleSettings() {
+    return normalizeSettings(DEFAULT_SETTINGS);
 }
 
 export function saveAdminConsoleSettings(settings = {}) {

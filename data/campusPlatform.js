@@ -72,12 +72,12 @@ export const campusModules = [
     },
     {
         id: 'connectors',
-        label: '连接器中心',
+        label: '能力市场',
         href: '/connectors',
         capabilityId: null,
-        source: '连接器中心',
-        summary: '统一管理系统接入、授权方式、凭证引用与调试回执',
-        kind: 'center',
+        source: 'Skill / MCP 市场',
+        summary: '浏览已审核上架能力、安装 Skill 与 MCP，并管理我的可用能力',
+        kind: 'market',
     },
     {
         id: 'system',

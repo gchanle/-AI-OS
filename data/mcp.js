@@ -8,6 +8,13 @@ export const mcpStatusMap = {
     paused: { id: 'paused', label: '已暂停', tone: 'draft' },
 };
 
+export const mcpMarketStatusMap = {
+    listed: '学校市场上架',
+    review: '申请审核中',
+    private: '仅管理员可见',
+    limited: '校内定向开放',
+};
+
 export const mcpTransportMap = {
     sse: 'Server-Sent Events',
     streamable_http: 'Streamable HTTP',
@@ -64,6 +71,7 @@ const baseMcpCatalog = [
         provider: '学校信息化中心',
         owner: '教务处 / 信息化中心',
         status: 'pilot',
+        marketStatus: 'limited',
         capabilityId: 'services',
         transport: 'websocket',
         protocolVersion: '2026-03-01',
@@ -86,6 +94,7 @@ const baseMcpCatalog = [
         provider: '学校图书馆',
         owner: '图书馆',
         status: 'ready',
+        marketStatus: 'listed',
         capabilityId: 'library',
         transport: 'streamable_http',
         protocolVersion: '2026-03-01',
@@ -107,6 +116,7 @@ const baseMcpCatalog = [
         provider: '超星',
         owner: '平台消息中心',
         status: 'design',
+        marketStatus: 'review',
         capabilityId: 'messages',
         transport: 'sse',
         protocolVersion: '2026-03-01',
@@ -120,6 +130,29 @@ const baseMcpCatalog = [
             '若第三方通知系统不提供标准协议，需要回退到连接器或页面解析方案。',
         ],
         governanceNote: '当前仍处方案设计阶段，不能对外宣称已接入。',
+    },
+    {
+        id: 'mcp-servicehall-stream',
+        name: '办事大厅 Service Hall MCP',
+        summary: '复用办事大厅登录态，通过真实 MCP 流式端点统一查询应用、消息通知和审批事项。',
+        provider: '超星',
+        owner: '超星办事大厅',
+        status: 'pilot',
+        marketStatus: 'limited',
+        capabilityId: 'services',
+        transport: 'streamable_http',
+        protocolVersion: '2026-04-09',
+        endpoint: 'https://servicehall.chaoxing.com/homepage/mcp/stream',
+        manifestPath: '/homepage/mcp/stream',
+        authModes: ['sso_session', 'customer_proxy'],
+        scope: '应用搜索 / 消息通知 / 审批事项',
+        expectedTools: ['search_apps', 'search_notices', 'search_approvals'],
+        expectedResources: ['servicehall_profile', 'approval_profile', 'notice_profile'],
+        risks: [
+            '当前端点在未登录时会返回“登录已超时”，调用前必须确认浏览器或代理会话已建立。',
+            '协议细节与工具入参仍待结合真实登录态继续验证，短期内需要保留直连连接器作为兜底。',
+        ],
+        governanceNote: '已确认真实端点存在，下一步应结合登录态补齐工具契约和会话复用方案。',
     },
 ];
 
@@ -137,6 +170,7 @@ export function buildMcpDraft() {
         provider: '当前租户',
         owner: '待分配',
         status: 'design',
+        marketStatus: 'private',
         capabilityId: 'services',
         transport: 'streamable_http',
         protocolVersion: '2026-03-01',
@@ -154,6 +188,7 @@ export function buildMcpDefinitionDefaults(raw = {}) {
         provider: raw.provider || '当前租户',
         owner: raw.owner || '待分配',
         status: raw.status || 'design',
+        marketStatus: raw.marketStatus || 'private',
         capabilityId: raw.capabilityId || 'services',
         transport: raw.transport || 'streamable_http',
         protocolVersion: raw.protocolVersion || '2026-03-01',
@@ -356,6 +391,7 @@ export function buildMissingMcpPackageState(mcp) {
         version: '1.0.0',
         entry: 'MCP.md',
         status: mcp.status,
+        marketStatus: mcp.marketStatus,
         transport: mcp.transport,
         protocolVersion: mcp.protocolVersion,
         manifestPath: mcp.manifestPath,
@@ -414,8 +450,10 @@ export function buildMcpView(mcp, runtime = {}, packageRegistry = []) {
         artifactValidationMeta,
         artifactValidationPassed,
         statusMeta,
+        marketLabel: mcpMarketStatusMap[mcp.marketStatus] || mcp.marketStatus,
         canPilot: validation.state !== 'invalid' && artifactValidationPassed && Boolean(mcp.endpoint),
         canReady: validation.state === 'valid' && packageInfo.validation?.state === 'valid' && Boolean(mcp.endpoint),
+        canPublishMarket: validation.state === 'valid' && artifactValidationPassed,
     };
 }
 
@@ -428,6 +466,7 @@ export function buildMcpSummary(items = []) {
         total: items.length,
         ready: items.filter((item) => item.status === 'ready' && item.canReady).length,
         pilot: items.filter((item) => item.status === 'pilot' && item.canPilot).length,
+        listed: items.filter((item) => item.marketStatus === 'listed').length,
         validated: items.filter((item) => item.validation.state === 'valid' && item.artifactValidation?.state === 'valid').length,
         packaged: items.filter((item) => item.artifactValidation?.state !== 'missing').length,
         attention: items.filter((item) => item.validation.state === 'warning' || item.artifactValidation?.state === 'warning' || item.handshakeState === 'warning').length,

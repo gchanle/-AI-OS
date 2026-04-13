@@ -9,6 +9,7 @@ import {
     buildMcpSummary,
     buildMcpViews,
     getMcpById,
+    mcpMarketStatusMap,
     loadMcpDefinitionState,
     loadMcpRuntime,
     mcpAuthModeMap,
@@ -68,6 +69,7 @@ function buildDrawerFormState(item) {
         provider: target.provider || '',
         owner: target.owner || '',
         status: target.status || 'design',
+        marketStatus: target.marketStatus || 'private',
         capabilityId: target.capabilityId || 'services',
         transport: target.transport || 'streamable_http',
         protocolVersion: target.protocolVersion || '2026-03-01',
@@ -258,6 +260,7 @@ export default function McpCenter({ initialMcpId = null, initialMcpPackages = []
             provider: drawerForm.provider,
             owner: drawerForm.owner,
             status: drawerForm.status,
+            marketStatus: drawerForm.marketStatus,
             capabilityId: drawerForm.capabilityId,
             transport: drawerForm.transport,
             protocolVersion: drawerForm.protocolVersion,
@@ -413,6 +416,10 @@ export default function McpCenter({ initialMcpId = null, initialMcpPackages = []
                         <strong>{summary.validated}</strong>
                     </div>
                     <div className="mcp-metric glass">
+                        <span>市场上架</span>
+                        <strong>{summary.listed}</strong>
+                    </div>
+                    <div className="mcp-metric glass">
                         <span>已生成制品</span>
                         <strong>{summary.packaged}</strong>
                     </div>
@@ -514,6 +521,7 @@ export default function McpCenter({ initialMcpId = null, initialMcpPackages = []
                                         <span className={`mcp-status-pill ${selectedMcp.statusMeta.tone}`}>{selectedMcp.statusMeta.label}</span>
                                         <span className={`mcp-status-pill ${selectedMcp.validationMeta.tone}`}>{selectedMcp.validationMeta.label}</span>
                                         <span className={`mcp-status-pill ${selectedMcp.artifactValidationMeta.tone}`}>{selectedMcp.artifactValidationMeta.label}</span>
+                                        <span className="mcp-status-pill draft">{selectedMcp.marketLabel}</span>
                                     </div>
                                     <h2>{selectedMcp.name}</h2>
                                     <p>{selectedMcp.summary}</p>
@@ -766,6 +774,14 @@ export default function McpCenter({ initialMcpId = null, initialMcpPackages = []
                                     <select value={drawerForm.status} onChange={(event) => handleDrawerChange('status', event.target.value)}>
                                         {Object.values(mcpStatusMap).map((item) => (
                                             <option key={item.id} value={item.id}>{item.label}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label className="mcp-field">
+                                    <span>市场状态</span>
+                                    <select value={drawerForm.marketStatus} onChange={(event) => handleDrawerChange('marketStatus', event.target.value)}>
+                                        {Object.entries(mcpMarketStatusMap).map(([id, label]) => (
+                                            <option key={id} value={id}>{label}</option>
                                         ))}
                                     </select>
                                 </label>
