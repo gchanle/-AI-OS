@@ -27,6 +27,16 @@ function getTaskLabel(status = '') {
     return status || '待执行';
 }
 
+function formatSelectionMode(mode = '') {
+    if (mode === 'pinned_only') return '仅固定工具';
+    if (mode === 'prefer_pinned') return '优先固定工具';
+    return '自动';
+}
+
+function formatWebSearchMode(mode = '') {
+    return mode === 'manual_only' ? '手动开启后才允许' : '自动判断';
+}
+
 function formatToolOutputValue(value) {
     if (value === null || value === undefined || value === '') {
         return '暂无';
@@ -54,6 +64,182 @@ function truncateText(text = '', limit = 240) {
     }
 
     return `${content.slice(0, limit)}...`;
+}
+
+function buildCitationSections(data = {}) {
+    const citations = Array.isArray(data.citations)
+        ? data.citations
+        : Array.isArray(data.researchBundle?.citations)
+            ? data.researchBundle.citations
+            : [];
+    const bundle = data.researchBundle && typeof data.researchBundle === 'object' ? data.researchBundle : null;
+    const answerTrace = Array.isArray(data.answerTrace)
+        ? data.answerTrace
+        : Array.isArray(bundle?.answerTrace)
+            ? bundle.answerTrace
+            : [];
+    const sourceTrace = Array.isArray(data.sourceTrace)
+        ? data.sourceTrace
+        : Array.isArray(bundle?.sourceTrace)
+            ? bundle.sourceTrace
+            : [];
+    const traceValidation = data.traceValidation && typeof data.traceValidation === 'object'
+        ? data.traceValidation
+        : bundle?.traceValidation && typeof bundle.traceValidation === 'object'
+            ? bundle.traceValidation
+            : null;
+    const sources = Array.isArray(bundle?.sources) ? bundle.sources : [];
+    const fetchedPages = Array.isArray(bundle?.fetchedPages) ? bundle.fetchedPages : [];
+    const failedPages = Array.isArray(bundle?.failedPages) ? bundle.failedPages : [];
+    const fetchedBySourceId = new Map(
+        fetchedPages
+            .map((item) => [String(item?.sourceId || '').trim(), item])
+            .filter(([key]) => key)
+    );
+    const failedBySourceId = new Map(
+        failedPages
+            .map((item) => [String(item?.sourceId || '').trim(), item])
+            .filter(([key]) => key)
+    );
+    const sections = [];
+
+    if (citations.length > 0) {
+        sections.push({
+            title: '引用绑定',
+            type: 'list',
+            items: citations.map((item, index) => ({
+                title: `${item.citationLabel || `[${index + 1}]`} ${item.title || `来源 ${index + 1}`}`,
+                body: truncateText(item.excerpt || item.snippet || '暂无摘录', 180),
+                href: item.url || '',
+                meta: item.sourceId || '',
+            })),
+            emptyText: '当前没有引用绑定。',
+        });
+    }
+
+    if (bundle) {
+        sections.push({
+            title: 'Research Bundle',
+            type: 'kv',
+            items: [
+                { label: '模式', value: bundle.mode || 'unknown' },
+                { label: '来源数', value: String(Array.isArray(bundle.sources) ? bundle.sources.length : 0) },
+                { label: '正文数', value: String(Array.isArray(bundle.fetchedPages) ? bundle.fetchedPages.length : 0) },
+                { label: '失败数', value: String(Array.isArray(bundle.failedPages) ? bundle.failedPages.length : 0) },
+            ],
+        });
+    }
+
+    if (traceValidation) {
+        sections.push({
+            title: '引用校验',
+            type: 'kv',
+            items: [
+                { label: '段落数', value: String(traceValidation.paragraphCount || 0) },
+                { label: '已引用段落', value: String(traceValidation.citedParagraphCount || 0) },
+                { label: '未引用段落', value: String(traceValidation.uncitedParagraphCount || 0) },
+                { label: '未命中引用', value: String(Array.isArray(traceValidation.unmatchedCitationLabels) ? traceValidation.unmatchedCitationLabels.length : 0) },
+                { label: '未使用来源', value: String(traceValidation.unusedSourceCount || 0) },
+            ],
+        });
+
+        if (Array.isArray(traceValidation.unmatchedCitationLabels) && traceValidation.unmatchedCitationLabels.length > 0) {
+            sections.push({
+                title: '异常引用',
+                type: 'list',
+                items: traceValidation.unmatchedCitationLabels.map((item, index) => ({
+                    title: `未命中引用 ${index + 1}`,
+                    body: item,
+                    href: '',
+                    meta: '回答里出现了引用号，但没有绑定到来源',
+                })),
+                emptyText: '当前没有异常引用。',
+            });
+        }
+    }
+
+    if (answerTrace.length > 0) {
+        sections.push({
+            title: '段落 Trace',
+            type: 'trace',
+            items: answerTrace.map((item) => ({
+                title: item.paragraphId || '段落',
+                body: item.text || '',
+                meta: (item.citationLabels || []).join(' ') || '未显式标注引用',
+                tags: item.sourceIds || [],
+            })),
+            emptyText: '当前没有段落级 trace。',
+        });
+    }
+
+    if (sourceTrace.length > 0) {
+        sections.push({
+            title: 'Answer-to-Source',
+            type: 'list',
+            items: sourceTrace.map((item, index) => ({
+                title: `${item.citationLabel || `[${index + 1}]`} ${item.title || item.sourceId || `来源 ${index + 1}`}`,
+                body: item.paragraphIds?.length
+                    ? `命中段落：${item.paragraphIds.join('、')}`
+                    : '当前回答还没有显式引用到这个来源。',
+                href: item.url || '',
+                meta: item.sourceId || '',
+            })),
+            emptyText: '当前没有来源到答案的映射。',
+        });
+    }
+
+    if (bundle && sources.length > 0) {
+        sections.push({
+            title: '来源回放',
+            type: 'bundle-replay',
+            items: sources.map((item, index) => {
+                const sourceId = String(item.sourceId || '').trim();
+                const fetched = fetchedBySourceId.get(sourceId) || null;
+                const failed = failedBySourceId.get(sourceId) || null;
+                return {
+                    title: `${item.rank || index + 1}. ${item.title || `来源 ${index + 1}`}`,
+                    body: truncateText(item.snippet || fetched?.excerpt || '暂无摘要', 200),
+                    href: item.url || '',
+                    meta: item.researchQuery || sourceId,
+                    status: fetched ? 'fetched' : failed ? 'failed' : 'source_only',
+                    excerpt: fetched?.excerpt || '',
+                    compareText: fetched?.excerpt || item.snippet || '',
+                    secondaryText: item.snippet || '',
+                };
+            }),
+            emptyText: '当前没有可回放的来源。',
+        });
+    }
+
+    if (fetchedPages.length > 1) {
+        sections.push({
+            title: '对比式阅读',
+            type: 'compare',
+            items: fetchedPages.slice(0, 4).map((item, index) => ({
+                title: item.title || `正文 ${index + 1}`,
+                body: truncateText(item.excerpt || '暂无正文摘录', 220),
+                href: item.url || '',
+                meta: item.sourceId || '',
+            })),
+            emptyText: '当前没有足够多的正文可对比。',
+        });
+    }
+
+    if (failedPages.length > 0) {
+        sections.push({
+            title: '逐来源排障',
+            type: 'list',
+            items: failedPages.map((item, index) => ({
+                title: item.title || `失败来源 ${index + 1}`,
+                body: '该来源暂未成功抓取正文，可继续在浏览器或后续读取器中排查。',
+                href: item.url || '',
+                meta: item.sourceId || item.researchQuery || '',
+            })),
+            emptyText: '当前没有失败来源。',
+        });
+    }
+
+    return sections;
 }
 
 function buildToolOutputEntries(task = null) {
@@ -163,6 +349,7 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有研究来源。',
             },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -193,6 +380,7 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有受限来源。',
             },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -216,6 +404,26 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有研究来源。',
             },
+            ...buildCitationSections(data),
+        ];
+    }
+
+    if (entry.toolId === 'compose.report') {
+        return [
+            {
+                title: '汇总文档',
+                type: 'text',
+                text: String(data.answer || '').trim() || '当前没有返回整理后的文档正文。',
+            },
+            {
+                title: '合成范围',
+                type: 'kv',
+                items: [
+                    { label: '来源步骤数', value: String(data.sourceCount || 0) },
+                    { label: '来源键', value: Array.isArray(data.sourceStepKeys) ? data.sourceStepKeys.join('、') : '暂无' },
+                ],
+            },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -274,6 +482,7 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有附加限制说明。',
             },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -303,6 +512,7 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有读取失败的来源。',
             },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -337,6 +547,7 @@ function renderToolOutputSections(entry = null) {
                 })),
                 emptyText: '当前没有可展示的引用来源。',
             },
+            ...buildCitationSections(data),
         ];
     }
 
@@ -495,6 +706,38 @@ function buildTaskContinuePrompt(task = {}, nextAction = '') {
 
     lines.push('请不要从头重复解释，直接承接已有上下文，先判断现在最值得继续的动作，再继续推进。');
 
+    return lines.join('\n');
+}
+
+function buildOutputContinuePrompt(task = {}, output = null, mode = 'continue') {
+    const lines = [
+        `继续承接任务「${task.title || '萤火虫任务'}」中工具输出「${output?.label || output?.toolId || '当前结果'}」。`,
+    ];
+
+    if (task.goal) {
+        lines.push(`原始目标：${task.goal}`);
+    }
+
+    if (output?.summary) {
+        lines.push(`当前输出摘要：${output.summary}`);
+    }
+
+    const answer = String(output?.data?.answer || '').trim();
+    if (answer) {
+        lines.push(`当前可继续编辑的正文：\n${answer}`);
+    }
+
+    if (Array.isArray(output?.data?.researchBundle?.sources) && output.data.researchBundle.sources.length > 0) {
+        if (mode === 'compare_sources') {
+            lines.push('请只基于已有 source bundle 做对比式阅读，重点比较各来源说法、时间点、差异和可信度，不要从零重新检索。');
+        } else {
+            lines.push('请基于已有 source bundle 继续完善，不要从零重新检索。');
+        }
+    }
+
+    lines.push(mode === 'compare_sources'
+        ? '请直接输出对比阅读结果，并优先复用已有来源、正文摘录和引用映射。'
+        : '请直接继续补充、改写或收敛当前结果，并优先复用已有来源、正文摘录和引用映射。');
     return lines.join('\n');
 }
 
@@ -707,12 +950,25 @@ export default function OperationPanel({
     ), [selectedOutputId, toolOutputs]);
 
     const selectedOutputSections = useMemo(() => renderToolOutputSections(selectedOutput), [selectedOutput]);
+    const selectedOutputHasBundle = Boolean(selectedOutput?.data?.researchBundle && typeof selectedOutput.data.researchBundle === 'object');
 
     const currentLogs = useMemo(() => (
         Array.isArray(selectedFireflyTask?.executionLogs)
             ? selectedFireflyTask.executionLogs.slice(-8).reverse()
             : []
     ), [selectedFireflyTask]);
+    const plannerControlPolicy = selectedFireflyTask?.planMetadata?.controlPlanePolicy || null;
+    const toolSelectionControl = selectedFireflyTask?.planMetadata?.toolSelectionControl || null;
+    const plannerReview = selectedFireflyTask?.planMetadata?.plannerReview || null;
+    const sourceBundleReplay = selectedFireflyTask?.planMetadata?.sourceBundleReplay || null;
+    const plannerSelfRevisions = Array.isArray(plannerReview?.selfRevisions)
+        ? plannerReview.selfRevisions
+        : Array.isArray(plannerReview?.revisions)
+            ? plannerReview.revisions
+            : [];
+    const plannerGovernanceInfluences = Array.isArray(plannerReview?.governanceInfluences)
+        ? plannerReview.governanceInfluences
+        : [];
 
     const relatedMemories = useMemo(() => {
         if (!selectedFireflyTask) {
@@ -751,6 +1007,40 @@ export default function OperationPanel({
                 preferredToolIds: nextAction?.preferredToolIds || [],
                 taskSelectedSkills: task.selectedSkillLabels || [],
                 memoryIds: task.memoryIds || [],
+            },
+            threadKey: task.threadKey || task.id,
+        });
+    };
+
+    const handleContinueFromOutput = (task, output, mode = 'continue') => {
+        if (!task || !output) {
+            return;
+        }
+
+        const researchBundle = output?.data?.researchBundle && typeof output.data.researchBundle === 'object'
+            ? output.data.researchBundle
+            : null;
+
+        onContinueTask?.(buildOutputContinuePrompt(task, output, mode), {
+            capabilityIds: task.capabilityIds || capabilityIds,
+            runtimeContext: {
+                ...(task.resumeContext || {}),
+                ...(task.contextSnapshot || {}),
+                resumeMode: true,
+                parentTaskId: task.id,
+                taskTitle: task.title,
+                taskGoal: task.goal,
+                taskResultSummary: task.resultSummary,
+                preferredToolIds: [output.toolId].filter(Boolean),
+                memoryIds: task.memoryIds || [],
+                ...(researchBundle ? {
+                    researchReplay: {
+                        bundle: researchBundle,
+                        sourceLabel: output.label || output.toolId || '来源包',
+                        sourceToolId: output.toolId || '',
+                        followupMode: mode,
+                    },
+                } : {}),
             },
             threadKey: task.threadKey || task.id,
         });
@@ -1055,6 +1345,36 @@ export default function OperationPanel({
                                                         {selectedOutput.summary || '当前步骤暂无摘要。'}
                                                     </div>
 
+                                                    {selectedFireflyTask ? (
+                                                        <div className="operation-recovery-actions">
+                                                            <button
+                                                                type="button"
+                                                                className="operation-inline-action primary"
+                                                                onClick={() => handleContinueFromOutput(selectedFireflyTask, selectedOutput)}
+                                                            >
+                                                                基于此结果继续
+                                                            </button>
+                                                            {selectedOutputHasBundle ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="operation-inline-action"
+                                                                    onClick={() => handleContinueFromOutput(selectedFireflyTask, selectedOutput, 'reuse_bundle')}
+                                                                >
+                                                                    复用来源包续写
+                                                                </button>
+                                                            ) : null}
+                                                            {selectedOutputHasBundle ? (
+                                                                <button
+                                                                    type="button"
+                                                                    className="operation-inline-action"
+                                                                    onClick={() => handleContinueFromOutput(selectedFireflyTask, selectedOutput, 'compare_sources')}
+                                                                >
+                                                                    做对比式阅读
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : null}
+
                                                     <div className="operation-output-sections">
                                                         {selectedOutputSections.map((section) => (
                                                             <div key={section.title} className="operation-output-card">
@@ -1076,6 +1396,84 @@ export default function OperationPanel({
                                                                     <div className="operation-output-list">
                                                                         {section.items.length > 0 ? section.items.map((item, index) => (
                                                                             <div key={`${section.title}-${item.title}-${index}`} className="operation-output-item">
+                                                                                <strong>{item.title}</strong>
+                                                                                <span>{item.body}</span>
+                                                                                {item.meta ? <small>{item.meta}</small> : null}
+                                                                                {item.href ? (
+                                                                                    <a href={item.href} className="operation-file-link" target="_blank" rel="noreferrer">
+                                                                                        打开来源
+                                                                                    </a>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        )) : (
+                                                                            <div className="operation-empty">{section.emptyText}</div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : null}
+                                                                {section.type === 'trace' ? (
+                                                                    <div className="operation-output-list">
+                                                                        {section.items.length > 0 ? section.items.map((item, index) => (
+                                                                            <div key={`${section.title}-${item.title}-${index}`} className="operation-output-item">
+                                                                                <div className="operation-trace-head">
+                                                                                    <strong>{item.title}</strong>
+                                                                                    {item.meta ? <small>{item.meta}</small> : null}
+                                                                                </div>
+                                                                                <span>{item.body}</span>
+                                                                                {Array.isArray(item.tags) && item.tags.length > 0 ? (
+                                                                                    <div className="operation-tag-row">
+                                                                                        {item.tags.map((tag) => (
+                                                                                            <span key={`${item.title}-${tag}`} className="operation-inline-tag">{tag}</span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        )) : (
+                                                                            <div className="operation-empty">{section.emptyText}</div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : null}
+                                                                {section.type === 'bundle-replay' ? (
+                                                                    <div className="operation-output-list">
+                                                                        {section.items.length > 0 ? section.items.map((item, index) => (
+                                                                            <div key={`${section.title}-${item.title}-${index}`} className={`operation-output-item operation-bundle-item ${item.status || 'source_only'}`}>
+                                                                                <div className="operation-trace-head">
+                                                                                    <strong>{item.title}</strong>
+                                                                                    {item.meta ? <small>{item.meta}</small> : null}
+                                                                                </div>
+                                                                                <span>{item.body}</span>
+                                                                                {item.excerpt ? (
+                                                                                    <details className="operation-inline-details">
+                                                                                        <summary>查看正文摘录</summary>
+                                                                                        <div className="operation-output-pre">{item.excerpt}</div>
+                                                                                    </details>
+                                                                                ) : null}
+                                                                                {item.secondaryText && item.compareText && item.secondaryText !== item.compareText ? (
+                                                                                    <div className="operation-compare-grid">
+                                                                                        <div className="operation-output-kv-item">
+                                                                                            <strong>搜索摘要</strong>
+                                                                                            <span>{item.secondaryText}</span>
+                                                                                        </div>
+                                                                                        <div className="operation-output-kv-item">
+                                                                                            <strong>正文摘录</strong>
+                                                                                            <span>{truncateText(item.compareText, 320)}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : null}
+                                                                                {item.href ? (
+                                                                                    <a href={item.href} className="operation-file-link" target="_blank" rel="noreferrer">
+                                                                                        打开来源
+                                                                                    </a>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        )) : (
+                                                                            <div className="operation-empty">{section.emptyText}</div>
+                                                                        )}
+                                                                    </div>
+                                                                ) : null}
+                                                                {section.type === 'compare' ? (
+                                                                    <div className="operation-compare-grid">
+                                                                        {section.items.length > 0 ? section.items.map((item, index) => (
+                                                                            <div key={`${section.title}-${item.title}-${index}`} className="operation-output-kv-item">
                                                                                 <strong>{item.title}</strong>
                                                                                 <span>{item.body}</span>
                                                                                 {item.meta ? <small>{item.meta}</small> : null}
@@ -1166,6 +1564,57 @@ export default function OperationPanel({
                                                         <small>{item.summary}</small>
                                                     </button>
                                                 ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {(plannerControlPolicy || toolSelectionControl || plannerReview || sourceBundleReplay) ? (
+                                        <div className="operation-memory-card">
+                                            <span className="operation-canvas-kicker">规划解释</span>
+                                            <div className="operation-memory-list">
+                                                {plannerControlPolicy ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>{plannerControlPolicy.presetLabel || '当前策略'}</strong>
+                                                        <small>
+                                                            工具选择：{formatSelectionMode(plannerControlPolicy.selectionMode)} · 联网：{formatWebSearchMode(plannerControlPolicy.webSearchMode)}
+                                                        </small>
+                                                        <small>
+                                                            已屏蔽 {plannerControlPolicy.blockedToolIds?.length || 0} 个 · 使用前确认 {plannerControlPolicy.confirmBeforeUseToolIds?.length || 0} 个
+                                                        </small>
+                                                    </div>
+                                                ) : null}
+                                                {toolSelectionControl?.selectedTools?.length ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>本轮命中工具</strong>
+                                                        <small>{toolSelectionControl.selectedTools.map((item) => item.name || item.id).join('、')}</small>
+                                                    </div>
+                                                ) : null}
+                                                {toolSelectionControl?.excludedTools?.length ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>本轮未纳入</strong>
+                                                        <small>{toolSelectionControl.excludedTools.map((item) => item.name || item.id).join('、')}</small>
+                                                    </div>
+                                                ) : null}
+                                                {plannerSelfRevisions.length ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>Planner 自检修正</strong>
+                                                        <small>{plannerSelfRevisions.join('；')}</small>
+                                                    </div>
+                                                ) : null}
+                                                {plannerGovernanceInfluences.length ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>前台治理导致的路径变化</strong>
+                                                        <small>{plannerGovernanceInfluences.join('；')}</small>
+                                                    </div>
+                                                ) : null}
+                                                {sourceBundleReplay ? (
+                                                    <div className="operation-memory-item">
+                                                        <strong>来源包复用</strong>
+                                                        <small>
+                                                            已复用 {sourceBundleReplay.sourceCount || 0} 条来源、{sourceBundleReplay.fetchedCount || 0} 条正文摘录
+                                                        </small>
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         </div>
                                     ) : null}

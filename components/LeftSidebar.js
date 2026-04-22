@@ -12,6 +12,7 @@ import {
     buildFireflyMemorySnapshot,
     touchFireflyMemory,
 } from '@/data/fireflyMemory';
+import { loadServerChatSessions, saveServerChatSessions } from '@/data/campusPlatform';
 import { loadCampusUserProfile } from '@/data/userProfile';
 import { campusCapabilities } from '@/data/workspace';
 import './LeftSidebar.css';
@@ -229,9 +230,29 @@ export default function LeftSidebar({ onNewChat, onSelectSession, variant = 'cla
     useEffect(() => {
         let readyTimer;
 
-        const loadData = () => {
+        const loadData = async () => {
             try {
-                const storedChats = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+                const profile = loadCampusUserProfile();
+                let storedChats = JSON.parse(localStorage.getItem('chat_sessions') || '[]');
+                try {
+                    const serverChats = await loadServerChatSessions({
+                        uid: profile.uid,
+                        fid: profile.fid,
+                    });
+                    if (Array.isArray(serverChats) && serverChats.length > 0) {
+                        storedChats = serverChats;
+                        localStorage.setItem('chat_sessions', JSON.stringify(serverChats));
+                    } else if (Array.isArray(storedChats) && storedChats.length > 0) {
+                        saveServerChatSessions({
+                            uid: profile.uid,
+                            fid: profile.fid,
+                            chatSessions: storedChats,
+                        }).catch(() => {});
+                    }
+                } catch {
+                    // fall back to browser-local history
+                }
+
                 const normalizedChats = Array.isArray(storedChats)
                     ? storedChats.map((chat) => ({
                         ...chat,

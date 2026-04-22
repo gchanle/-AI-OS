@@ -10,10 +10,17 @@ import {
     buildFireflyServerMemorySnapshot,
     rememberFireflyServerTask,
 } from '@/lib/fireflyMemoryStore';
+import { getFireflyClientState } from '@/lib/fireflyClientStateStore';
+import { buildFireflyToolbeltSnapshot } from '@/lib/fireflyToolbeltStore';
 import { planFireflyPresetTask, planFireflyTask } from '@/services/fireflyPlannerService';
 import { createFireflyTask } from '@/services/fireflyTaskService';
 import { loadAdminAgentRuntimeConfig } from '@/lib/adminAgentRuntimeStore';
 import { resolveFireflyTool } from '@/services/fireflyToolRegistry';
+import {
+    prepareFireflyDeerRuntime,
+    syncFireflyPlanToDeerRuntime,
+    syncFireflyTaskToDeerRuntime,
+} from '@/services/fireflyDeerRuntimeService';
 
 function emitEvent(onEvent, type, payload = {}) {
     onEvent?.({
@@ -71,13 +78,59 @@ async function buildManagedContextSnapshot({
     fid = '',
 }) {
     const agentConfig = loadAdminAgentRuntimeConfig();
+    const clientState = await getFireflyClientState({
+        uid,
+        fid,
+    });
+    const controlPlanePrefs = clientState.controlPlanePrefs || {};
+    const governanceEvents = Array.isArray(clientState.governanceEvents)
+        ? clientState.governanceEvents.slice(0, 8)
+        : [];
+    const blockedToolIds = Array.isArray(controlPlanePrefs?.tools?.blockedToolIds)
+        ? controlPlanePrefs.tools.blockedToolIds.filter(Boolean)
+        : [];
+    const blockedToolSet = new Set(blockedToolIds);
+    const rawToolbeltSnapshot = await buildFireflyToolbeltSnapshot({
+        uid,
+        fid,
+        threadKey,
+    });
+    const toolbeltSnapshot = {
+        ...rawToolbeltSnapshot,
+        items: Array.isArray(rawToolbeltSnapshot.items)
+            ? rawToolbeltSnapshot.items.filter((item) => !blockedToolSet.has(item.toolId))
+            : [],
+        pinnedToolIds: Array.isArray(rawToolbeltSnapshot.pinnedToolIds)
+            ? rawToolbeltSnapshot.pinnedToolIds.filter((item) => !blockedToolSet.has(item))
+            : [],
+        leasedToolIds: Array.isArray(rawToolbeltSnapshot.leasedToolIds)
+            ? rawToolbeltSnapshot.leasedToolIds.filter((item) => !blockedToolSet.has(item))
+            : [],
+        preferredToolIds: Array.isArray(rawToolbeltSnapshot.preferredToolIds)
+            ? rawToolbeltSnapshot.preferredToolIds.filter((item) => !blockedToolSet.has(item))
+            : [],
+    };
+    const memoryInjectTopK = Math.max(0, Number(controlPlanePrefs?.memory?.injectTopK ?? agentConfig.memory.injectTopK));
     if (!agentConfig.memory?.enabled) {
         return {
-            contextSnapshot,
+            contextSnapshot: {
+                ...contextSnapshot,
+                controlPlanePrefs,
+                toolbelt: toolbeltSnapshot,
+                preferredToolIds: toolbeltSnapshot.preferredToolIds,
+                pinnedToolIds: toolbeltSnapshot.pinnedToolIds,
+                leasedToolIds: toolbeltSnapshot.leasedToolIds,
+                toolbeltStrategy: toolbeltSnapshot.strategy,
+                blockedToolIds,
+                toolSelectionMode: String(controlPlanePrefs?.tools?.selectionMode || 'auto').trim(),
+                webSearchMode: String(controlPlanePrefs?.tools?.webSearchMode || 'auto').trim(),
+                governanceHistory: governanceEvents,
+            },
             memorySnapshot: {
                 items: [],
                 markdown: '',
             },
+            toolbeltSnapshot,
         };
     }
 
@@ -87,7 +140,7 @@ async function buildManagedContextSnapshot({
         threadKey,
         capabilityIds,
         question,
-        limit: agentConfig.memory.injectTopK,
+        limit: memoryInjectTopK,
     });
     const mergedMemoryIds = [
         ...(Array.isArray(contextSnapshot?.memoryIds) ? contextSnapshot.memoryIds : []),
@@ -97,6 +150,19 @@ async function buildManagedContextSnapshot({
     return {
         contextSnapshot: {
             ...contextSnapshot,
+            controlPlanePrefs,
+            toolbelt: toolbeltSnapshot,
+            preferredToolIds: [
+                ...toolbeltSnapshot.preferredToolIds,
+                ...(Array.isArray(contextSnapshot?.preferredToolIds) ? contextSnapshot.preferredToolIds : []),
+            ].filter((item, index, array) => item && !blockedToolSet.has(item) && array.indexOf(item) === index),
+            pinnedToolIds: toolbeltSnapshot.pinnedToolIds,
+            leasedToolIds: toolbeltSnapshot.leasedToolIds,
+            toolbeltStrategy: toolbeltSnapshot.strategy,
+            blockedToolIds,
+            toolSelectionMode: String(controlPlanePrefs?.tools?.selectionMode || 'auto').trim(),
+            webSearchMode: String(controlPlanePrefs?.tools?.webSearchMode || 'auto').trim(),
+            governanceHistory: governanceEvents,
             ...(memorySnapshot.markdown ? {
                 memorySummary: mergeMemorySummaries(contextSnapshot?.memorySummary, memorySnapshot.markdown),
                 memoryIds: mergedMemoryIds,
@@ -112,6 +178,7 @@ async function buildManagedContextSnapshot({
             } : {}),
         },
         memorySnapshot,
+        toolbeltSnapshot,
     };
 }
 
@@ -127,6 +194,14 @@ export async function runFireflyTaskPlan({
     runtimeInput = {},
 }) {
     if (!plan.handled) {
+        await syncFireflyPlanToDeerRuntime({
+            threadKey,
+            question,
+            plan,
+            capabilityIds,
+            contextSnapshot,
+            onEvent,
+        });
         emitEvent(onEvent, 'unhandled', {
             plan,
         });
@@ -163,6 +238,15 @@ export async function runFireflyTaskPlan({
         lastTaskId: task.id,
         lastRunId: runtimeRun.id,
         workspaceId: task.workspaceSnapshot?.path || task.workspaceSnapshot?.moduleLabel || '',
+    });
+    await syncFireflyPlanToDeerRuntime({
+        threadKey,
+        question,
+        plan,
+        capabilityIds,
+        contextSnapshot,
+        task,
+        onEvent,
     });
     emitEvent(onEvent, 'task_created', {
         task,
@@ -209,11 +293,41 @@ export async function runFireflyTaskPlan({
             metadata: contextSnapshot.serviceMemoryStrategy,
         });
     }
+    if (contextSnapshot?.toolbeltStrategy && typeof contextSnapshot.toolbeltStrategy === 'object') {
+        await appendFireflyRuntimeEvent(runtimeRun.id, {
+            type: 'toolbelt_snapshot_ready',
+            label: '工具箱已同步',
+            detail: `固定 ${contextSnapshot.toolbeltStrategy.pinnedCount || 0} · 临时启用 ${contextSnapshot.toolbeltStrategy.leasedCount || 0} · 已学习 ${contextSnapshot.toolbeltStrategy.learnedCount || 0}`,
+            taskId: task.id,
+            threadKey,
+            metadata: contextSnapshot.toolbeltStrategy,
+        });
+    }
+    if (Array.isArray(contextSnapshot?.governanceHistory) && contextSnapshot.governanceHistory.length > 0) {
+        await appendFireflyRuntimeEvent(runtimeRun.id, {
+            type: 'governance_context_ready',
+            label: '治理上下文已同步',
+            detail: contextSnapshot.governanceHistory
+                .map((item) => String(item?.label || '').trim())
+                .filter(Boolean)
+                .slice(0, 3)
+                .join('、') || '已带入前台治理动作',
+            taskId: task.id,
+            threadKey,
+            metadata: {
+                count: contextSnapshot.governanceHistory.length,
+                labels: contextSnapshot.governanceHistory
+                    .map((item) => String(item?.label || '').trim())
+                    .filter(Boolean)
+                    .slice(0, 6),
+            },
+        });
+    }
     if (task.planMetadata?.plannerReview) {
         await appendFireflyRuntimeEvent(runtimeRun.id, {
             type: 'planner_review_ready',
             label: '规划自检完成',
-            detail: task.planMetadata.plannerReview.revisions?.join('；') || '本轮规划通过自检，无需修正。',
+            detail: task.planMetadata.plannerReview.allRevisions?.join('；') || task.planMetadata.plannerReview.revisions?.join('；') || '本轮规划通过自检，无需修正。',
             taskId: task.id,
             threadKey,
             metadata: task.planMetadata.plannerReview,
@@ -298,6 +412,7 @@ export async function runFireflyTaskPlan({
             fid,
             onEvent: runtimeAwareOnEvent,
             runtimeInput,
+            runtimeRunId: runtimeRun.id,
         });
         task = executed.task;
         await upsertFireflyRuntimeTask(task, {
@@ -343,10 +458,24 @@ export async function runFireflyTaskPlan({
                 selectedSkillLabels: task.selectedSkillLabels || [],
             },
         });
-        await rememberFireflyServerTask(task, {
+        if (contextSnapshot?.controlPlanePrefs?.memory?.autoRememberTasks !== false) {
+            await rememberFireflyServerTask(task, {
+                uid,
+                fid,
+                sessionId: threadKey,
+                defaultPriorityBand: String(contextSnapshot?.controlPlanePrefs?.memory?.defaultPriorityBand || '').trim(),
+            });
+        }
+        await syncFireflyTaskToDeerRuntime({
+            threadKey,
+            task: {
+                ...task,
+                runId: runtimeRun.id,
+            },
+            runId: runtimeRun.id,
             uid,
             fid,
-            sessionId: threadKey,
+            onEvent,
         });
         const reply = buildUserFacingReply(task, executed.results);
         emitEvent(onEvent, executed.waitingForApproval ? 'task_awaiting_approval' : 'task_completed', {
@@ -395,10 +524,24 @@ export async function runFireflyTaskPlan({
                 failedStepLabel: failedTask.steps?.find((item) => item.status === 'failed')?.label || '',
             },
         });
-        await rememberFireflyServerTask(failedTask, {
+        if (contextSnapshot?.controlPlanePrefs?.memory?.autoRememberTasks !== false) {
+            await rememberFireflyServerTask(failedTask, {
+                uid,
+                fid,
+                sessionId: threadKey,
+                defaultPriorityBand: String(contextSnapshot?.controlPlanePrefs?.memory?.defaultPriorityBand || '').trim(),
+            });
+        }
+        await syncFireflyTaskToDeerRuntime({
+            threadKey,
+            task: {
+                ...failedTask,
+                runId: runtimeRun.id,
+            },
+            runId: runtimeRun.id,
             uid,
             fid,
-            sessionId: threadKey,
+            onEvent,
         });
         const reply = [
             '## 任务执行失败',
@@ -429,12 +572,22 @@ export async function runFireflyAgentTask({
     uid,
     fid,
     onEvent,
+    runtimeInput = {},
 }) {
-    const managedContext = await buildManagedContextSnapshot({
+    const deerPreparedRuntime = await prepareFireflyDeerRuntime({
         question,
         threadKey,
         capabilityIds,
         contextSnapshot,
+        uid,
+        fid,
+        onEvent,
+    });
+    const managedContext = await buildManagedContextSnapshot({
+        question,
+        threadKey,
+        capabilityIds,
+        contextSnapshot: deerPreparedRuntime.contextSnapshot,
         uid,
         fid,
     });
@@ -453,6 +606,7 @@ export async function runFireflyAgentTask({
         uid,
         fid,
         onEvent,
+        runtimeInput,
     });
 }
 
@@ -563,7 +717,7 @@ function buildReplayPlan(task = {}, mode = 'full', stepId = '') {
                 ? `审批后继续：${replaySteps[0]?.label || task.title || '萤火虫任务'}`
                 : `重新执行：${task.title || '萤火虫任务'}`;
     const replayPlanSteps = replaySteps.map((step, index) => ({
-        id: `replay-step-${step.toolId || step.skillId || index + 1}-${index + 1}`,
+        id: String(step.id || `replay-step-${step.toolId || step.skillId || index + 1}-${index + 1}`).trim(),
         order: index + 1,
         toolId: step.toolId || step.skillId || '',
         label: step.label || `步骤 ${index + 1}`,
@@ -666,7 +820,14 @@ function buildReplayPlan(task = {}, mode = 'full', stepId = '') {
     };
 }
 
-function buildResumeContextSnapshot(task = {}, preferredToolIds = []) {
+function buildResumeContextSnapshot(task = {}, preferredToolIds = [], options = {}) {
+    const controlNote = String(options.controlNote || task.controlNote || '').trim();
+    const controlAction = String(options.controlAction || '').trim();
+    const controlStepId = String(options.stepId || '').trim();
+    const controlStep = controlStepId && Array.isArray(task?.steps)
+        ? task.steps.find((item) => item.id === controlStepId) || null
+        : null;
+
     return {
         ...(task.contextSnapshot || {}),
         resumeMode: true,
@@ -678,6 +839,10 @@ function buildResumeContextSnapshot(task = {}, preferredToolIds = []) {
         taskSelectedSkills: Array.isArray(task.selectedSkillLabels) ? task.selectedSkillLabels : [],
         preferredToolIds,
         memoryIds: Array.isArray(task.memoryIds) ? task.memoryIds : [],
+        takeoverNote: controlNote,
+        takeoverAction: controlAction,
+        takeoverStepId: controlStepId,
+        takeoverStepLabel: String(controlStep?.label || '').trim(),
     };
 }
 
@@ -689,6 +854,8 @@ export async function replayFireflyTask({
     uid = '',
     fid = '',
     onEvent,
+    controlNote = '',
+    controlAction = '',
 }) {
     const plan = buildReplayPlan(task, mode, stepId);
     if (!plan) {
@@ -705,7 +872,11 @@ export async function replayFireflyTask({
         question: String(task?.goal || task?.title || '').trim(),
         threadKey: String(task?.threadKey || 'default').trim(),
         capabilityIds: Array.isArray(task?.capabilityIds) ? task.capabilityIds : [],
-        contextSnapshot: buildResumeContextSnapshot(task, preferredToolIds),
+        contextSnapshot: buildResumeContextSnapshot(task, preferredToolIds, {
+            controlNote,
+            controlAction,
+            stepId,
+        }),
         uid,
         fid,
     });
@@ -721,6 +892,10 @@ export async function replayFireflyTask({
         onEvent,
         runtimeInput: {
             approvedStepIds,
+            controlNote,
+            controlAction,
+            controlStepId: stepId,
+            reportInstructions: controlNote,
         },
     });
 }
@@ -730,6 +905,9 @@ export async function resumeFireflyTask({
     uid = '',
     fid = '',
     onEvent,
+    controlNote = '',
+    controlAction = '',
+    stepId = '',
 }) {
     const failedToolIds = Array.isArray(task?.steps)
         ? task.steps.filter((step) => step.status === 'failed').map((step) => step.toolId || step.skillId).filter(Boolean)
@@ -742,10 +920,20 @@ export async function resumeFireflyTask({
         question: String(task?.goal || task?.title || '').trim(),
         threadKey: String(task?.threadKey || 'default').trim(),
         capabilityIds: Array.isArray(task?.capabilityIds) ? task.capabilityIds : [],
-        contextSnapshot: buildResumeContextSnapshot(task, preferredToolIds),
+        contextSnapshot: buildResumeContextSnapshot(task, preferredToolIds, {
+            controlNote,
+            controlAction,
+            stepId,
+        }),
         uid,
         fid,
         onEvent,
+        runtimeInput: {
+            controlNote,
+            controlAction,
+            controlStepId: stepId,
+            reportInstructions: controlNote,
+        },
     });
 }
 
@@ -761,11 +949,20 @@ export async function runFireflyPresetTask({
     onEvent,
     runtimeInput = {},
 }) {
-    const managedContext = await buildManagedContextSnapshot({
+    const deerPreparedRuntime = await prepareFireflyDeerRuntime({
         question: question || '',
         threadKey,
         capabilityIds,
         contextSnapshot,
+        uid,
+        fid,
+        onEvent,
+    });
+    const managedContext = await buildManagedContextSnapshot({
+        question: question || '',
+        threadKey,
+        capabilityIds,
+        contextSnapshot: deerPreparedRuntime.contextSnapshot,
         uid,
         fid,
     });

@@ -13,6 +13,9 @@ import {
 } from '@/services/fireflyTaskService';
 import { loadAdminAgentRuntimeConfig } from '@/lib/adminAgentRuntimeStore';
 import { resolveFireflyTool } from '@/services/fireflyToolRegistry';
+import { executeFireflySubagentBatch } from '@/services/fireflySubagentService';
+import { persistFireflyThreadArtifact } from '@/lib/fireflyThreadStateStore';
+import { markFireflyToolbeltOutcome } from '@/lib/fireflyToolbeltStore';
 
 function emitEvent(onEvent, type, payload = {}) {
     onEvent?.({
@@ -213,6 +216,41 @@ function getApprovedStepIds(runtimeInput = {}) {
         : [];
 }
 
+async function persistResultArtifact(task, step, skill, result) {
+    const markdown = String(result?.markdown || '').trim();
+    if (!markdown) {
+        return null;
+    }
+
+    const artifactType = step?.toolId === 'compose.report' ? 'report' : 'markdown';
+    const artifactLabel = step?.toolId === 'compose.report'
+        ? `${task?.title || skill?.name || 'report'}`
+        : (skill?.name || step?.label || '执行结果');
+
+    return persistFireflyThreadArtifact({
+        threadKey: task?.threadKey || 'default',
+        label: artifactLabel,
+        type: artifactType,
+        content: markdown,
+        extension: 'md',
+    });
+}
+
+async function persistResearchBundleArtifact(task, step, result) {
+    const bundle = result?.data?.researchBundle;
+    if (!bundle || typeof bundle !== 'object') {
+        return null;
+    }
+
+    return persistFireflyThreadArtifact({
+        threadKey: task?.threadKey || 'default',
+        label: `${step?.toolId || 'research'}-bundle`,
+        type: 'json',
+        content: JSON.stringify(bundle, null, 2),
+        extension: 'json',
+    });
+}
+
 export async function executeFireflyTask(task, {
     plannedSteps = [],
     question,
@@ -221,6 +259,7 @@ export async function executeFireflyTask(task, {
     fid,
     onEvent,
     runtimeInput = {},
+    runtimeRunId = '',
 }) {
     const agentConfig = loadAdminAgentRuntimeConfig();
     let nextTask = updateFireflyTaskStatus(task, FIREFLY_TASK_STATUS.RUNNING);
@@ -375,55 +414,30 @@ export async function executeFireflyTask(task, {
             });
         });
 
-        const batchResults = await Promise.all(resolvedBatch.map(async ({ plannedStep, step, tool }) => {
-            if (!tool) {
-                return {
-                    plannedStep,
-                    step,
-                    tool: null,
-                    error: new Error(`Tool not found: ${plannedStep.toolId}`),
-                };
-            }
-
-            try {
-                const result = await tool.execute({
-                    question,
-                    contextSnapshot,
-                    uid,
-                    fid,
-                    step,
-                    runtimeInput: {
-                        ...runtimeInput,
-                        ...(step.input || {}),
-                    },
-                    runtimeState,
-                });
-
-                return {
-                    plannedStep,
-                    step,
-                    tool,
-                    result,
-                };
-            } catch (error) {
-                return {
-                    plannedStep,
-                    step,
-                    tool,
-                    error,
-                };
-            }
-        }));
+        const batchResults = await executeFireflySubagentBatch(resolvedBatch, {
+            threadKey: nextTask.threadKey,
+            parentTaskId: nextTask.id,
+            parentRunId: runtimeRunId || nextTask.runId || '',
+            question,
+            contextSnapshot,
+            uid,
+            fid,
+            runtimeInput,
+            runtimeState,
+            onEvent,
+        });
 
         let fatalPayload = null;
         const subtaskOutcomeMap = new Map();
 
-        batchResults.forEach(({ plannedStep, step, tool, result, error }) => {
+        for (const { plannedStep, step, tool, result, error } of batchResults) {
             const skill = buildSkillMeta(tool, plannedStep);
             const subtaskId = String(step.subtaskId || '').trim();
 
             if (!error && result) {
                 const diagnosticSummary = buildResultDiagnostic(step.outputKey || step.toolId, result) || result.summary;
+                const persistedArtifact = await persistResultArtifact(nextTask, step, skill, result);
+                const persistedBundleArtifact = await persistResearchBundleArtifact(nextTask, step, result);
                 runtimeState.stepResults[step.outputKey || step.toolId] = result;
                 results.push({
                     skillId: skill.id,
@@ -447,8 +461,26 @@ export async function executeFireflyTask(task, {
                     type: 'markdown',
                     label: skill.name,
                     content: result.markdown,
-                    href: result.links?.[0]?.href || '',
+                    href: persistedArtifact?.href || result.links?.[0]?.href || '',
+                    fileName: persistedArtifact?.fileName || '',
+                    relativePath: persistedArtifact?.relativePath || '',
+                    mimeType: persistedArtifact?.mimeType || '',
+                    size: persistedArtifact?.size || 0,
+                    summary: diagnosticSummary,
                 });
+                if (persistedBundleArtifact) {
+                    nextTask = pushFireflyTaskArtifact(nextTask, {
+                        type: 'json',
+                        label: `${skill.name} Source Bundle`,
+                        content: '',
+                        href: persistedBundleArtifact.href || '',
+                        fileName: persistedBundleArtifact.fileName || '',
+                        relativePath: persistedBundleArtifact.relativePath || '',
+                        mimeType: persistedBundleArtifact.mimeType || '',
+                        size: persistedBundleArtifact.size || 0,
+                        summary: `${skill.name} 的来源绑定与研究包`,
+                    });
+                }
                 if (step.workerId) {
                     nextTask = updateFireflyTaskWorker(nextTask, step.workerId, {
                         status: 'completed',
@@ -479,7 +511,16 @@ export async function executeFireflyTask(task, {
                         resultSummary: diagnosticSummary || `${skill.name} 已完成`,
                     });
                 }
-                return;
+                await markFireflyToolbeltOutcome({
+                    uid,
+                    fid,
+                    threadKey: nextTask.threadKey,
+                    toolId: step.toolId || skill.id,
+                    label: skill.name,
+                    outcome: 'success',
+                    summary: diagnosticSummary || result.summary || '',
+                });
+                continue;
             }
 
             const errorMessage = error instanceof Error ? error.message : '未知错误';
@@ -522,6 +563,15 @@ export async function executeFireflyTask(task, {
                     resultSummary: errorMessage,
                 });
             }
+            await markFireflyToolbeltOutcome({
+                uid,
+                fid,
+                threadKey: nextTask.threadKey,
+                toolId: step.toolId || skill.id,
+                label: skill.name,
+                outcome: 'failed',
+                summary: errorMessage,
+            });
 
             if (step.continueOnError && agentConfig.runtime.allowPartialSuccess) {
                 const fallbackResult = buildStepFailureResult(tool || skill, error);
@@ -544,7 +594,7 @@ export async function executeFireflyTask(task, {
                         resultSummary: fallbackResult.summary,
                     });
                 }
-                return;
+                continue;
             }
 
             const fatalTask = updateFireflyTaskWorker(nextTask, 'supervisor-root', {
@@ -557,7 +607,7 @@ export async function executeFireflyTask(task, {
                 task: fatalTask,
                 error: error instanceof Error ? error : new Error(errorMessage),
             };
-        });
+        }
 
         batchSubtaskIds.forEach((subtaskId) => {
             const outcome = subtaskOutcomeMap.get(subtaskId);
@@ -583,6 +633,8 @@ export async function executeFireflyTask(task, {
                 batchIndex: batchIndex + 1,
                 stepIds: resolvedBatch.map(({ step }) => step.id),
                 subtaskIds: batchSubtaskIds,
+                workerIds: resolvedBatch.map(({ step }) => step.workerId).filter(Boolean),
+                subagentRunIds: batchResults.map((item) => item.subagentRun?.id).filter(Boolean),
             });
             emitEvent(onEvent, 'checkpoint_saved', {
                 task: nextTask,

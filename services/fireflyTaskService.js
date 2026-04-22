@@ -298,6 +298,10 @@ export function createFireflyTask({
                 taskGoal: String(contextSnapshot.taskGoal || '').trim(),
                 taskResultSummary: String(contextSnapshot.taskResultSummary || '').trim(),
                 taskMemorySummary: String(contextSnapshot.taskMemorySummary || '').trim(),
+                takeoverNote: String(contextSnapshot.takeoverNote || '').trim(),
+                takeoverAction: String(contextSnapshot.takeoverAction || '').trim(),
+                takeoverStepId: String(contextSnapshot.takeoverStepId || '').trim(),
+                takeoverStepLabel: String(contextSnapshot.takeoverStepLabel || '').trim(),
             }
             : {},
         memoryIds: Array.isArray(plan.metadata?.memoryIds)
@@ -314,7 +318,7 @@ export function createFireflyTask({
         checkpointSummary: '',
         stepResults: {},
         steps: planSteps.map((step, index) => ({
-            id: buildId('firefly-step'),
+            id: String(step.id || buildId('firefly-step')).trim(),
             order: index + 1,
             toolId: step.toolId || step.skillId || '',
             skillId: step.toolId || step.skillId || '',
@@ -446,6 +450,8 @@ export function pushFireflyTaskCheckpoint(task, checkpoint = {}) {
         batchIndex: Number(checkpoint.batchIndex || 0),
         stepIds: Array.isArray(checkpoint.stepIds) ? checkpoint.stepIds.filter(Boolean) : [],
         subtaskIds: Array.isArray(checkpoint.subtaskIds) ? checkpoint.subtaskIds.filter(Boolean) : [],
+        workerIds: Array.isArray(checkpoint.workerIds) ? checkpoint.workerIds.filter(Boolean) : [],
+        subagentRunIds: Array.isArray(checkpoint.subagentRunIds) ? checkpoint.subagentRunIds.filter(Boolean) : [],
         createdAt,
     };
 
@@ -458,6 +464,7 @@ export function pushFireflyTaskCheckpoint(task, checkpoint = {}) {
 }
 
 export function pushFireflyTaskArtifact(task, artifact = {}) {
+    const createdAt = buildNow();
     return enrichFireflyTaskRecovery({
         ...task,
         artifacts: [...task.artifacts, {
@@ -466,8 +473,13 @@ export function pushFireflyTaskArtifact(task, artifact = {}) {
             label: artifact.label || '执行结果',
             content: artifact.content || '',
             href: artifact.href || '',
-            createdAt: buildNow(),
+            fileName: artifact.fileName || '',
+            relativePath: artifact.relativePath || '',
+            mimeType: artifact.mimeType || '',
+            size: Number(artifact.size || 0),
+            summary: artifact.summary || '',
+            createdAt,
         }],
-        updatedAt: buildNow(),
+        updatedAt: createdAt,
     });
 }

@@ -12,7 +12,9 @@ import {
 import {
   consumeFireflyHandoffRequest,
   loadWorkspacePrefs,
+  loadServerWorkspacePrefs,
   saveWorkspacePrefs,
+  saveServerWorkspacePrefs,
 } from '@/data/campusPlatform';
 import {
   campusCapabilities,
@@ -54,43 +56,79 @@ export default function Home() {
   const [enabledCapabilityIds, setEnabledCapabilityIds] = useState(() => buildAdminWorkspaceBootstrap().enabledCapabilityIds);
 
   useEffect(() => {
-    const ensuredProfile = ensureCampusUserProfile();
-    setUserProfile(ensuredProfile);
-    const adminBootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), ensuredProfile);
-    const parsedPrefs = loadWorkspacePrefs();
-    setEnabledCapabilityIds(adminBootstrap.enabledCapabilityIds);
+    let cancelled = false;
 
-    if (Array.isArray(parsedPrefs.capabilityIds) && parsedPrefs.capabilityIds.length > 0) {
-      setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds.filter((item) => adminBootstrap.enabledCapabilityIds.includes(item))));
-    } else if (adminBootstrap.capabilityIds.length > 0) {
-      setSelectedCapabilityIds(sortCapabilityIds(adminBootstrap.capabilityIds));
-    }
-    if (parsedPrefs.modelId) {
-      setPreferredModelId(parsedPrefs.modelId);
-    } else if (adminBootstrap.modelId) {
-      setPreferredModelId(adminBootstrap.modelId);
-    }
-    if (parsedPrefs.workspaceMode) {
-      setWorkspaceMode(parsedPrefs.workspaceMode);
-    }
-    if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
-      setWebSearchEnabled(parsedPrefs.webSearchEnabled);
-    } else {
-      setWebSearchEnabled(Boolean(adminBootstrap.webSearchEnabled));
-    }
-    if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
-      setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
-    } else {
-      setDeepResearchEnabled(Boolean(adminBootstrap.deepResearchEnabled));
-    }
-    if (parsedPrefs.dashboardLayoutVersion === DASHBOARD_LAYOUT_PREF_VERSION) {
-      const storedSections = Array.isArray(parsedPrefs.dashboardSections)
-        ? DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item))
-        : [];
-      setDashboardSections(storedSections);
-    } else {
-      setDashboardSections(DEFAULT_DASHBOARD_SECTIONS);
-    }
+    const bootstrapPage = async () => {
+      const ensuredProfile = ensureCampusUserProfile();
+      if (cancelled) {
+        return;
+      }
+
+      setUserProfile(ensuredProfile);
+      const adminBootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), ensuredProfile);
+      const localPrefs = loadWorkspacePrefs();
+      let parsedPrefs = localPrefs;
+
+      try {
+        const serverPrefs = await loadServerWorkspacePrefs({
+          uid: ensuredProfile.uid,
+          fid: ensuredProfile.fid,
+        });
+        if (!cancelled && serverPrefs && Object.keys(serverPrefs).length > 0) {
+          parsedPrefs = {
+            ...localPrefs,
+            ...serverPrefs,
+          };
+          saveWorkspacePrefs(parsedPrefs);
+        }
+      } catch {
+        parsedPrefs = localPrefs;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setEnabledCapabilityIds(adminBootstrap.enabledCapabilityIds);
+
+      if (Array.isArray(parsedPrefs.capabilityIds) && parsedPrefs.capabilityIds.length > 0) {
+        setSelectedCapabilityIds(sortCapabilityIds(parsedPrefs.capabilityIds.filter((item) => adminBootstrap.enabledCapabilityIds.includes(item))));
+      } else if (adminBootstrap.capabilityIds.length > 0) {
+        setSelectedCapabilityIds(sortCapabilityIds(adminBootstrap.capabilityIds));
+      }
+      if (parsedPrefs.modelId) {
+        setPreferredModelId(parsedPrefs.modelId);
+      } else if (adminBootstrap.modelId) {
+        setPreferredModelId(adminBootstrap.modelId);
+      }
+      if (parsedPrefs.workspaceMode) {
+        setWorkspaceMode(parsedPrefs.workspaceMode);
+      }
+      if (typeof parsedPrefs.webSearchEnabled === 'boolean') {
+        setWebSearchEnabled(parsedPrefs.webSearchEnabled);
+      } else {
+        setWebSearchEnabled(Boolean(adminBootstrap.webSearchEnabled));
+      }
+      if (typeof parsedPrefs.deepResearchEnabled === 'boolean') {
+        setDeepResearchEnabled(parsedPrefs.deepResearchEnabled);
+      } else {
+        setDeepResearchEnabled(Boolean(adminBootstrap.deepResearchEnabled));
+      }
+      if (parsedPrefs.dashboardLayoutVersion === DASHBOARD_LAYOUT_PREF_VERSION) {
+        const storedSections = Array.isArray(parsedPrefs.dashboardSections)
+          ? DASHBOARD_SECTION_ORDER.filter((item) => parsedPrefs.dashboardSections.includes(item))
+          : [];
+        setDashboardSections(storedSections);
+      } else {
+        setDashboardSections(DEFAULT_DASHBOARD_SECTIONS);
+      }
+    };
+
+    bootstrapPage();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => subscribeAdminConsoleSettings((settings) => {
@@ -119,7 +157,7 @@ export default function Home() {
   }), []);
 
   useEffect(() => {
-    saveWorkspacePrefs({
+    const nextPrefs = {
       capabilityIds: selectedCapabilityIds,
       modelId: preferredModelId,
       workspaceMode,
@@ -127,7 +165,13 @@ export default function Home() {
       deepResearchEnabled,
       dashboardSections,
       dashboardLayoutVersion: DASHBOARD_LAYOUT_PREF_VERSION,
-    });
+    };
+    saveWorkspacePrefs(nextPrefs);
+    saveServerWorkspacePrefs({
+      uid: userProfile?.uid,
+      fid: userProfile?.fid,
+      workspacePrefs: nextPrefs,
+    }).catch(() => {});
     const profile = loadCampusUserProfile();
     upsertCampusPreferenceMemory({
       uid: profile.uid,
@@ -138,7 +182,7 @@ export default function Home() {
       webSearchEnabled,
       deepResearchEnabled,
     });
-  }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled, dashboardSections]);
+  }, [selectedCapabilityIds, preferredModelId, workspaceMode, webSearchEnabled, deepResearchEnabled, dashboardSections, userProfile?.uid, userProfile?.fid]);
 
   useEffect(() => {
     let mounted = true;

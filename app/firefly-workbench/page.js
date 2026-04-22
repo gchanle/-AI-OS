@@ -11,6 +11,7 @@ import {
 import {
     buildFireflyHandoffHref,
     loadWorkspacePrefs,
+    loadServerWorkspacePrefs,
 } from '@/data/campusPlatform';
 import {
     chatModelOptions,
@@ -33,19 +34,49 @@ export default function FireflyWorkbenchPage() {
     const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
 
     useEffect(() => {
-        const profile = ensureCampusUserProfile();
-        const bootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), profile);
-        const prefs = loadWorkspacePrefs();
+        let cancelled = false;
 
-        setUserProfile(profile);
-        setSelectedCapabilityIds(
-            Array.isArray(prefs.capabilityIds) && prefs.capabilityIds.length > 0
-                ? sortCapabilityIds(prefs.capabilityIds.filter((item) => bootstrap.enabledCapabilityIds.includes(item)))
-                : sortCapabilityIds(bootstrap.capabilityIds)
-        );
-        setPreferredModelId(String(prefs.modelId || bootstrap.modelId || defaultChatModelId).trim());
-        setWebSearchEnabled(typeof prefs.webSearchEnabled === 'boolean' ? prefs.webSearchEnabled : Boolean(bootstrap.webSearchEnabled));
-        setDeepResearchEnabled(typeof prefs.deepResearchEnabled === 'boolean' ? prefs.deepResearchEnabled : Boolean(bootstrap.deepResearchEnabled));
+        const bootstrapPage = async () => {
+            const profile = ensureCampusUserProfile();
+            const bootstrap = buildAdminWorkspaceBootstrap(loadAdminConsoleSettings(), profile);
+            const localPrefs = loadWorkspacePrefs();
+            let prefs = localPrefs;
+
+            try {
+                const serverPrefs = await loadServerWorkspacePrefs({
+                    uid: profile.uid,
+                    fid: profile.fid,
+                });
+                if (!cancelled && serverPrefs && Object.keys(serverPrefs).length > 0) {
+                    prefs = {
+                        ...localPrefs,
+                        ...serverPrefs,
+                    };
+                }
+            } catch {
+                prefs = localPrefs;
+            }
+
+            if (cancelled) {
+                return;
+            }
+
+            setUserProfile(profile);
+            setSelectedCapabilityIds(
+                Array.isArray(prefs.capabilityIds) && prefs.capabilityIds.length > 0
+                    ? sortCapabilityIds(prefs.capabilityIds.filter((item) => bootstrap.enabledCapabilityIds.includes(item)))
+                    : sortCapabilityIds(bootstrap.capabilityIds)
+            );
+            setPreferredModelId(String(prefs.modelId || bootstrap.modelId || defaultChatModelId).trim());
+            setWebSearchEnabled(typeof prefs.webSearchEnabled === 'boolean' ? prefs.webSearchEnabled : Boolean(bootstrap.webSearchEnabled));
+            setDeepResearchEnabled(typeof prefs.deepResearchEnabled === 'boolean' ? prefs.deepResearchEnabled : Boolean(bootstrap.deepResearchEnabled));
+        };
+
+        bootstrapPage();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => subscribeCampusUserProfile((profile) => {

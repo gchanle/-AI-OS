@@ -72,7 +72,12 @@ function parseSearchResults(html = '', limit = 6) {
 
 export async function searchWeb(query = '', options = {}) {
     const limit = Math.max(1, Number(options.limit || 6));
-    const response = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
+    const normalizedQuery = String(query || '').replace(/\s+/g, ' ').trim().slice(0, 220);
+    if (!normalizedQuery) {
+        return [];
+    }
+
+    const response = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(normalizedQuery)}`, {
         headers: {
             'User-Agent': 'Mozilla/5.0',
         },
@@ -84,7 +89,7 @@ export async function searchWeb(query = '', options = {}) {
     }
 
     const html = await response.text();
-    return parseSearchResults(html, limit);
+    return attachSourceIds(parseSearchResults(html, limit), 'web');
 }
 
 export async function fetchPageExcerpt(url = '', limit = 1200) {
@@ -119,6 +124,203 @@ function uniqueByUrl(results = []) {
         seen.add(url);
         return true;
     });
+}
+
+function attachSourceIds(results = [], prefix = 'source') {
+    return results.map((item, index) => ({
+        ...item,
+        sourceId: `${prefix}-${index + 1}`,
+        rank: index + 1,
+    }));
+}
+
+function buildCitationRecords(searchResults = [], fetchedPages = []) {
+    const fetchedBySourceId = new Map(
+        fetchedPages
+            .filter(Boolean)
+            .map((item) => [String(item.sourceId || '').trim(), item])
+            .filter(([key]) => key)
+    );
+
+    return searchResults.map((item, index) => {
+        const sourceId = String(item?.sourceId || `source-${index + 1}`).trim();
+        const fetched = fetchedBySourceId.get(sourceId) || null;
+
+        return {
+            sourceId,
+            citationLabel: `[${index + 1}]`,
+            title: item.title,
+            url: item.url,
+            snippet: item.snippet || '',
+            researchQuery: item.researchQuery || '',
+            groundedBy: fetched ? 'page_excerpt' : 'search_snippet',
+            excerpt: fetched?.excerpt || '',
+        };
+    });
+}
+
+function splitAnswerParagraphs(answer = '') {
+    const lines = String(answer || '').replace(/\r/g, '').split('\n');
+    const paragraphs = [];
+    let buffer = [];
+    let paragraphIndex = 0;
+
+    const flushBuffer = () => {
+        const content = buffer.join('\n').trim();
+        if (!content) {
+            buffer = [];
+            return;
+        }
+
+        paragraphIndex += 1;
+        paragraphs.push({
+            id: `p${paragraphIndex}`,
+            text: content,
+        });
+        buffer = [];
+    };
+
+    lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            flushBuffer();
+            return;
+        }
+
+        if (/^#{1,6}\s/.test(trimmed)) {
+            flushBuffer();
+            paragraphIndex += 1;
+            paragraphs.push({
+                id: `p${paragraphIndex}`,
+                text: trimmed,
+            });
+            return;
+        }
+
+        buffer.push(trimmed);
+    });
+
+    flushBuffer();
+    return paragraphs;
+}
+
+function extractCitationLabels(text = '') {
+    return Array.from(String(text || '').matchAll(/\[(\d+)\]/g)).map((match) => `[${match[1]}]`);
+}
+
+export function buildAnswerTrace(answer = '', citations = []) {
+    const normalizedCitations = Array.isArray(citations) ? citations : [];
+    const citationByLabel = new Map(
+        normalizedCitations.map((item) => [String(item.citationLabel || '').trim(), item]).filter(([key]) => key)
+    );
+    const paragraphs = splitAnswerParagraphs(answer);
+    const paragraphTrace = paragraphs.map((paragraph) => {
+        const labels = Array.from(new Set(extractCitationLabels(paragraph.text)));
+        const matchedCitations = labels
+            .map((label) => citationByLabel.get(label))
+            .filter(Boolean);
+        const sourceIds = Array.from(new Set(matchedCitations.map((item) => String(item.sourceId || '').trim()).filter(Boolean)));
+
+        return {
+            paragraphId: paragraph.id,
+            text: paragraph.text,
+            citationLabels: labels,
+            sourceIds,
+            citationCount: matchedCitations.length,
+            grounded: matchedCitations.length > 0,
+            missingCitationLabels: labels.filter((label) => !citationByLabel.has(label)),
+        };
+    });
+
+    const sourceTrace = normalizedCitations.map((citation) => {
+        const sourceId = String(citation.sourceId || '').trim();
+        const linkedParagraphs = paragraphTrace.filter((item) => item.sourceIds.includes(sourceId));
+        return {
+            sourceId,
+            citationLabel: citation.citationLabel,
+            title: citation.title,
+            url: citation.url,
+            paragraphIds: linkedParagraphs.map((item) => item.paragraphId),
+            paragraphCount: linkedParagraphs.length,
+        };
+    });
+
+    const unmatchedCitationLabels = Array.from(
+        new Set(paragraphTrace.flatMap((item) => item.missingCitationLabels || []).filter(Boolean))
+    );
+    const usedSourceIds = new Set(paragraphTrace.flatMap((item) => item.sourceIds || []).filter(Boolean));
+    const unusedSources = normalizedCitations
+        .filter((item) => {
+            const sourceId = String(item.sourceId || '').trim();
+            return sourceId && !usedSourceIds.has(sourceId);
+        })
+        .map((item) => ({
+            sourceId: item.sourceId,
+            citationLabel: item.citationLabel,
+            title: item.title,
+            url: item.url,
+        }));
+
+    return {
+        paragraphs: paragraphTrace,
+        sourceTrace,
+        validation: {
+            paragraphCount: paragraphTrace.length,
+            citedParagraphCount: paragraphTrace.filter((item) => item.grounded).length,
+            uncitedParagraphCount: paragraphTrace.filter((item) => !item.grounded).length,
+            unmatchedCitationLabels,
+            unusedSourceCount: unusedSources.length,
+            unusedSources,
+        },
+    };
+}
+
+export function buildResearchBundle({
+    question = '',
+    searchResults = [],
+    fetchedPages = [],
+    failedPages = [],
+    queries = [],
+    answer = '',
+    groundedBy = '',
+    mode = 'web',
+    answerTrace = null,
+    traceValidation = null,
+    sourceTrace = [],
+} = {}) {
+    return {
+        mode,
+        question,
+        groundedBy,
+        generatedAt: new Date().toISOString(),
+        queries,
+        citations: buildCitationRecords(searchResults, fetchedPages),
+        sources: searchResults.map((item) => ({
+            sourceId: item.sourceId || '',
+            rank: Number(item.rank || 0),
+            title: item.title,
+            url: item.url,
+            snippet: item.snippet || '',
+            researchQuery: item.researchQuery || '',
+        })),
+        fetchedPages: fetchedPages.map((item) => ({
+            sourceId: item.sourceId || '',
+            title: item.title,
+            url: item.url,
+            researchQuery: item.researchQuery || '',
+            excerpt: item.excerpt || '',
+        })),
+        failedPages: failedPages.map((item) => ({
+            sourceId: item.sourceId || '',
+            title: item.title,
+            url: item.url,
+            researchQuery: item.researchQuery || '',
+        })),
+        answer,
+        answerTrace: Array.isArray(answerTrace) ? answerTrace : [],
+        traceValidation: traceValidation && typeof traceValidation === 'object' ? traceValidation : null,
+        sourceTrace: Array.isArray(sourceTrace) ? sourceTrace : [],
+    };
 }
 
 function buildDeepResearchQueries(question = '') {
@@ -165,7 +367,7 @@ export async function searchWebDeep(question = '', options = {}) {
 
     return {
         queries,
-        results: uniqueByUrl(settled.flat()).slice(0, maxResults),
+        results: attachSourceIds(uniqueByUrl(settled.flat()).slice(0, maxResults), 'research'),
     };
 }
 
@@ -176,6 +378,8 @@ export async function readWebResults(results = [], options = {}) {
         results.slice(0, maxPages).map(async (item) => ({
             title: item.title,
             url: item.url,
+            sourceId: item.sourceId || '',
+            rank: Number(item.rank || 0),
             researchQuery: item.researchQuery || '',
             snippet: item.snippet || '',
             excerpt: await fetchPageExcerpt(item.url, excerptLimit),
@@ -192,6 +396,7 @@ export async function buildWebAnswer({
     question = '',
     searchResults = [],
     fetchedPages = [],
+    instructions = '',
 }) {
     if (!DASHSCOPE_API_KEY) {
         throw new Error('API key not configured');
@@ -200,10 +405,10 @@ export async function buildWebAnswer({
     const agentConfig = loadAdminAgentRuntimeConfig();
     const modelId = resolveChatModel(agentConfig.models?.primaryModelId).id;
     const sourceLines = searchResults.slice(0, 5).map((item, index) => (
-        `[${index + 1}] ${item.title}\n链接：${item.url}\n摘要：${item.snippet || '暂无摘要'}`
+        `[${index + 1}] ${item.title}\nsource_id：${item.sourceId || `web-${index + 1}`}\n链接：${item.url}\n摘要：${item.snippet || '暂无摘要'}`
     ));
     const pageLines = fetchedPages.slice(0, 3).map((item, index) => (
-        `正文摘录 [${index + 1}] ${item.title}\n${item.excerpt || '未能提取正文'}`
+        `正文摘录 [${index + 1}] ${item.title}\nsource_id：${item.sourceId || `web-${index + 1}`}\n${item.excerpt || '未能提取正文'}`
     ));
 
     const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
@@ -230,14 +435,18 @@ export async function buildWebAnswer({
                         '- 引用编号必须对应下面给出的搜索结果编号，不能自造编号',
                         '- 如果时间信息涉及中美时区差异，简要说明',
                         '- 不要编造未在材料中出现的事实',
+                        '- 对“今天发布了什么/最新发布/刚发布”这类问题，如果材料里没有直接证据指向官方或主流媒体确认的发布时间与产品名，必须明确说“暂未找到足够可信来源支持该结论”',
+                        '- 如果搜索结果之间相互矛盾，优先采用官方来源；若仍无法确定，就输出“信息不足，暂不下结论”',
                         '- 不要在正文末尾再重复写完整“来源”清单，来源清单会由系统附加',
                         '- 如果材料不足以确定答案，要明确说信息不足',
+                        instructions ? `- 额外执行要求：${instructions}` : '',
                     ].join('\n'),
                 },
                 {
                     role: 'user',
                     content: [
                         `问题：${question}`,
+                        instructions ? `前台接管说明：${instructions}` : '',
                         '',
                         '搜索结果：',
                         ...sourceLines,
@@ -256,9 +465,16 @@ export async function buildWebAnswer({
     }
 
     const payload = await response.json();
+    const answer = payload?.choices?.[0]?.message?.content?.trim() || '';
+    const citations = buildCitationRecords(searchResults, fetchedPages);
+    const trace = buildAnswerTrace(answer, citations);
     return {
-        answer: payload?.choices?.[0]?.message?.content?.trim() || '',
+        answer,
         groundedBy: fetchedPages.length > 0 ? 'page_excerpt' : 'search_snippet',
+        citations,
+        answerTrace: trace.paragraphs,
+        sourceTrace: trace.sourceTrace,
+        traceValidation: trace.validation,
     };
 }
 
@@ -357,6 +573,7 @@ export async function buildDeepResearchAnswer({
     question = '',
     searchResults = [],
     fetchedPages = [],
+    instructions = '',
 }) {
     if (!DASHSCOPE_API_KEY) {
         throw new Error('API key not configured');
@@ -365,10 +582,10 @@ export async function buildDeepResearchAnswer({
     const agentConfig = loadAdminAgentRuntimeConfig();
     const modelId = resolveChatModel(agentConfig.models?.primaryModelId).id;
     const sourceLines = searchResults.slice(0, 10).map((item, index) => (
-        `[${index + 1}] ${item.title}\n链接：${item.url}\n检索意图：${item.researchQuery || '主问题'}\n摘要：${item.snippet || '暂无摘要'}`
+        `[${index + 1}] ${item.title}\nsource_id：${item.sourceId || `research-${index + 1}`}\n链接：${item.url}\n检索意图：${item.researchQuery || '主问题'}\n摘要：${item.snippet || '暂无摘要'}`
     ));
     const pageLines = fetchedPages.slice(0, 6).map((item, index) => (
-        `正文摘录 [${index + 1}] ${item.title}\n检索意图：${item.researchQuery || '主问题'}\n${item.excerpt || '未能提取正文'}`
+        `正文摘录 [${index + 1}] ${item.title}\nsource_id：${item.sourceId || `research-${index + 1}`}\n检索意图：${item.researchQuery || '主问题'}\n${item.excerpt || '未能提取正文'}`
     ));
 
     const response = await fetch(`${DASHSCOPE_BASE_URL}/chat/completions`, {
@@ -396,12 +613,14 @@ export async function buildDeepResearchAnswer({
                         '- 仍待核实部分必须明确说为什么不能下结论',
                         '- 不要假装看过未提供的正文',
                         '- 不要在末尾重复完整来源清单，来源清单由系统拼接',
+                        instructions ? `- 额外执行要求：${instructions}` : '',
                     ].join('\n'),
                 },
                 {
                     role: 'user',
                     content: [
                         `研究问题：${question}`,
+                        instructions ? `前台接管说明：${instructions}` : '',
                         '',
                         '搜索结果：',
                         ...sourceLines,
@@ -420,8 +639,15 @@ export async function buildDeepResearchAnswer({
     }
 
     const payload = await response.json();
+    const answer = payload?.choices?.[0]?.message?.content?.trim() || '';
+    const citations = buildCitationRecords(searchResults, fetchedPages);
+    const trace = buildAnswerTrace(answer, citations);
     return {
-        answer: payload?.choices?.[0]?.message?.content?.trim() || '',
+        answer,
         groundedBy: fetchedPages.length > 0 ? 'page_excerpt' : 'search_snippet',
+        citations,
+        answerTrace: trace.paragraphs,
+        sourceTrace: trace.sourceTrace,
+        traceValidation: trace.validation,
     };
 }

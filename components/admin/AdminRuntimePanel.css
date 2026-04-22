@@ -149,6 +149,12 @@
     font-size: 11px;
 }
 
+.admin-runtime-item-path {
+    font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace;
+    word-break: break-all;
+    line-height: 1.7;
+}
+
 .admin-runtime-task-button {
     width: 100%;
     text-align: left;
@@ -159,6 +165,14 @@
 .admin-runtime-task-button:hover {
     transform: translateY(-1px);
     border-color: rgba(0, 102, 204, 0.14);
+}
+
+.admin-runtime-task-button:focus-visible,
+.admin-runtime-action:focus-visible,
+.admin-runtime-inline-action:focus-visible {
+    outline: none;
+    border-color: rgba(0, 102, 204, 0.28);
+    box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.08);
 }
 
 .admin-runtime-task-button.active {
@@ -359,6 +373,12 @@
 
 .admin-runtime-block {
     gap: 10px;
+}
+
+.admin-runtime-section-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .admin-runtime-subhead {

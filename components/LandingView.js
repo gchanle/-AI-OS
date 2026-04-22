@@ -453,7 +453,7 @@ export default function LandingView({
                         <div className="search-box-head">
                             <div>
                                 <div className="search-box-title">告诉萤火虫你现在要做什么</div>
-                                <div className="search-box-desc">支持直接发起任务，也可以先切换模型、联网搜索和接入模块。</div>
+                                <div className="search-box-desc">直接输入即可开始，模型、联网搜索和接入模块在下方单独调整。</div>
                             </div>
                             <div className="search-box-status">已接入 {selectedCapabilities.length} 个模块</div>
                         </div>
@@ -462,15 +462,20 @@ export default function LandingView({
                             className="search-input-area"
                             onClick={() => textareaRef.current?.focus()}
                         >
-                            <textarea
-                                ref={textareaRef}
-                                className="search-textarea"
-                                placeholder="例如：帮我把今天需要推进的科研、办事和阅读任务串成一条工作链"
-                                value={inputValue}
-                                onChange={(event) => setInputValue(event.target.value)}
-                                onKeyDown={handleKeyDown}
-                                rows={3}
-                            />
+                            <div className="search-textarea-shell">
+                                <textarea
+                                    ref={textareaRef}
+                                    className="search-textarea"
+                                    placeholder="发消息给萤火虫"
+                                    value={inputValue}
+                                    onChange={(event) => setInputValue(event.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    rows={3}
+                                />
+                                <div className="search-textarea-hint">
+                                    例如：帮我把今天要推进的科研、办事和阅读任务串成一条工作链
+                                </div>
+                            </div>
 
                             <div
                                 className="search-actions"

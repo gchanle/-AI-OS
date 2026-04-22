@@ -11,6 +11,8 @@
 .firefly-runtime-card.compact {
     min-width: 0;
     max-width: 100%;
+    padding: 11px 12px;
+    border-radius: 16px;
 }
 
 .firefly-runtime-card-head {
@@ -94,6 +96,54 @@
     line-height: 1.6;
 }
 
+.firefly-runtime-card-directive {
+    margin-top: 10px;
+    padding: 10px 11px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(24, 90, 188, 0.08);
+}
+
+.firefly-runtime-card-directive-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.firefly-runtime-card-directive-head strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-runtime-card-directive-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.firefly-runtime-card-directive-tags span,
+.firefly-runtime-card-stat.directive {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(24, 90, 188, 0.1);
+    color: rgba(24, 90, 188, 0.95);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-runtime-card-directive p {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
 .firefly-runtime-card-kicker {
     display: inline-flex;
     align-items: center;
@@ -109,11 +159,180 @@
     letter-spacing: 0.01em;
 }
 
+.firefly-runtime-compact-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 10px;
+    padding: 10px 11px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(24, 90, 188, 0.07);
+}
+
+.firefly-runtime-compact-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-runtime-compact-copy .firefly-runtime-card-kicker {
+    margin-top: 0;
+}
+
+.firefly-runtime-compact-copy strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-runtime-compact-copy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-runtime-compact-milestones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.firefly-runtime-compact-milestone {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-runtime-compact-milestone.current,
+.firefly-runtime-card-stat.active {
+    background: rgba(24, 90, 188, 0.09);
+    color: var(--primary);
+}
+
+.firefly-runtime-compact-milestone.done,
+.firefly-runtime-card-stat.success {
+    background: rgba(28, 146, 111, 0.11);
+    color: #1f8d6d;
+}
+
+.firefly-runtime-compact-milestone.waiting,
+.firefly-runtime-card-stat.warning {
+    background: rgba(214, 143, 26, 0.13);
+    color: #b06f12;
+}
+
+.firefly-runtime-compact-milestone.failed,
+.firefly-runtime-card-stat.danger {
+    background: rgba(210, 74, 55, 0.08);
+    color: #c44939;
+}
+
 .firefly-runtime-stage-strip {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin-top: 12px;
+}
+
+.firefly-runtime-control-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 13px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(24, 90, 188, 0.08);
+}
+
+.firefly-runtime-control-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-runtime-control-copy strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-runtime-control-copy span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-runtime-control-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.firefly-runtime-control-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(248, 250, 252, 0.96);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.firefly-runtime-control-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(24, 90, 188, 0.16);
+    color: var(--text-primary);
+}
+
+.firefly-runtime-control-button.primary {
+    background: rgba(24, 90, 188, 0.1);
+    border-color: rgba(24, 90, 188, 0.14);
+    color: var(--primary);
+}
+
+.firefly-runtime-control-button.danger {
+    background: rgba(254, 242, 242, 0.92);
+    border-color: rgba(239, 68, 68, 0.16);
+    color: #b91c1c;
+}
+
+.firefly-runtime-control-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+}
+
+.firefly-runtime-control-feedback {
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-runtime-control-feedback.success {
+    background: rgba(28, 146, 111, 0.1);
+    color: #1f8d6d;
+}
+
+.firefly-runtime-control-feedback.error {
+    background: rgba(210, 74, 55, 0.1);
+    color: #c44939;
 }
 
 .firefly-runtime-stage-item {
@@ -192,6 +411,10 @@
     margin-top: 9px;
 }
 
+.firefly-runtime-card-stats.compact-shell {
+    margin-top: 0;
+}
+
 .firefly-runtime-card-stat,
 .firefly-runtime-card-tool-chip {
     display: inline-flex;
@@ -203,21 +426,6 @@
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 600;
-}
-
-.firefly-runtime-card-stat.active {
-    background: rgba(24, 90, 188, 0.08);
-    color: var(--primary);
-}
-
-.firefly-runtime-card-stat.danger {
-    background: rgba(210, 74, 55, 0.08);
-    color: #c44939;
-}
-
-.firefly-runtime-card-stat.warning {
-    background: rgba(214, 143, 26, 0.13);
-    color: #b06f12;
 }
 
 .firefly-runtime-card-tool-row {
@@ -232,6 +440,14 @@
     align-items: stretch;
     gap: 8px;
     margin-top: 9px;
+}
+
+.firefly-runtime-card-pipeline-cluster {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
 }
 
 .firefly-runtime-highlight-card {
@@ -350,6 +566,10 @@
     text-align: left;
 }
 
+.firefly-runtime-section-head.static {
+    cursor: default;
+}
+
 .firefly-runtime-section-head-copy {
     display: flex;
     flex-direction: column;
@@ -409,6 +629,42 @@
     line-height: 1.55;
 }
 
+.firefly-runtime-step-retry-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-runtime-step-retry-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 11px;
+    border-radius: 12px;
+    background: rgba(246, 249, 253, 0.92);
+    border: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.firefly-runtime-step-retry-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.firefly-runtime-step-retry-copy strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.firefly-runtime-step-retry-copy span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
 .firefly-runtime-section-item em {
     color: var(--text-tertiary);
     font-style: normal;
@@ -445,11 +701,23 @@
         flex-direction: column;
     }
 
+    .firefly-runtime-card-pipeline-cluster {
+        flex-direction: column;
+    }
+
+    .firefly-runtime-control-actions {
+        flex-direction: column;
+    }
+
     .firefly-runtime-card-pipeline-arrow {
         display: none;
     }
 
     .firefly-runtime-section-item {
+        grid-template-columns: 1fr;
+    }
+
+    .firefly-runtime-step-retry-item {
         grid-template-columns: 1fr;
     }
 }

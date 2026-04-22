@@ -1,0 +1,252 @@
+.firefly-runtime-inline-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 11px;
+    border-radius: 16px;
+    background: rgba(248, 251, 255, 0.88);
+    border: 1px solid rgba(24, 90, 188, 0.08);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
+}
+
+.firefly-runtime-inline-strip.drawer {
+    padding: 9px 10px;
+    border-radius: 14px;
+    background: rgba(248, 251, 255, 0.82);
+}
+
+.firefly-runtime-inline-strip-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.firefly-runtime-inline-strip-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.firefly-runtime-inline-strip-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(24, 90, 188, 0.1);
+    color: rgba(24, 90, 188, 0.92);
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.firefly-runtime-inline-strip-status.success {
+    background: rgba(28, 146, 111, 0.11);
+    color: #1f8d6d;
+}
+
+.firefly-runtime-inline-strip-status.warning {
+    background: rgba(214, 143, 26, 0.13);
+    color: #b06f12;
+}
+
+.firefly-runtime-inline-strip-status.danger {
+    background: rgba(210, 74, 55, 0.1);
+    color: #c44939;
+}
+
+.firefly-runtime-inline-strip-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.firefly-runtime-inline-strip-copy strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.firefly-runtime-inline-strip-copy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-runtime-inline-strip-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.firefly-runtime-inline-strip-time {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.firefly-runtime-inline-strip-toggle,
+.firefly-runtime-inline-strip-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(24, 90, 188, 0.08);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.firefly-runtime-inline-strip-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(24, 90, 188, 0.12);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.firefly-runtime-inline-strip-control:hover:not(:disabled) {
+    transform: translateY(-1px);
+    color: var(--text-primary);
+    border-color: rgba(24, 90, 188, 0.18);
+}
+
+.firefly-runtime-inline-strip-control.primary {
+    background: rgba(24, 90, 188, 0.1);
+    color: var(--primary);
+}
+
+.firefly-runtime-inline-strip-control:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+}
+
+.firefly-runtime-inline-strip-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.firefly-runtime-inline-strip-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.firefly-runtime-inline-strip-route,
+.firefly-runtime-inline-strip-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-runtime-inline-strip-route {
+    background: rgba(24, 90, 188, 0.08);
+    color: rgba(24, 90, 188, 0.92);
+}
+
+.firefly-runtime-inline-strip-chip.active {
+    background: rgba(24, 90, 188, 0.09);
+    color: var(--primary);
+}
+
+.firefly-runtime-inline-strip-chip.done,
+.firefly-runtime-inline-strip-chip.success {
+    background: rgba(28, 146, 111, 0.11);
+    color: #1f8d6d;
+}
+
+.firefly-runtime-inline-strip-chip.warning {
+    background: rgba(214, 143, 26, 0.13);
+    color: #b06f12;
+}
+
+.firefly-runtime-inline-strip-chip.danger {
+    background: rgba(210, 74, 55, 0.08);
+    color: #c44939;
+}
+
+.firefly-runtime-inline-strip-chip.directive {
+    background: rgba(24, 90, 188, 0.12);
+    color: rgba(24, 90, 188, 0.95);
+}
+
+.firefly-runtime-inline-strip-chip.directive-subtle {
+    background: rgba(24, 90, 188, 0.06);
+    color: var(--text-secondary);
+}
+
+.firefly-runtime-inline-strip-directive {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(24, 90, 188, 0.08);
+}
+
+.firefly-runtime-inline-strip-directive strong {
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-runtime-inline-strip-directive p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-runtime-inline-strip-detail {
+    margin-top: 2px;
+}
+
+.firefly-runtime-inline-strip-detail .firefly-runtime-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    .firefly-runtime-inline-strip-head {
+        flex-direction: column;
+    }
+
+    .firefly-runtime-inline-strip-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

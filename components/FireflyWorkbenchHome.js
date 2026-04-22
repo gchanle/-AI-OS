@@ -26,7 +26,11 @@ import {
 import {
     loadFireflyTasks,
     subscribeFireflyTasks,
+    upsertFireflyTask,
 } from '@/data/fireflyTasks';
+import FireflyControlPlanePanel from '@/components/FireflyControlPlanePanel';
+import FireflyRuntimeCard from '@/components/FireflyRuntimeCard';
+import { requestFireflyRuntimeControl } from '@/lib/fireflyRuntimeControlClient';
 import './FireflyWorkbenchHome.css';
 
 function formatDateTime(value) {
@@ -45,6 +49,31 @@ function formatDateTime(value) {
         hour: '2-digit',
         minute: '2-digit',
     });
+}
+
+function formatTaskStatus(status = '') {
+    if (status === 'awaiting_approval') return '等待审批';
+    if (status === 'completed') return '已完成';
+    if (status === 'failed') return '失败';
+    if (status === 'in_progress') return '进行中';
+    if (status === 'running') return '执行中';
+    if (status === 'planning') return '规划中';
+    if (status === 'idle') return '空闲';
+    return status || '处理中';
+}
+
+function summarizePath(value = '') {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+        return '未建立';
+    }
+
+    const segments = normalized.split('/').filter(Boolean);
+    if (segments.length <= 4) {
+        return normalized;
+    }
+
+    return `.../${segments.slice(-4).join('/')}`;
 }
 
 function normalizeRuntimeTask(task = {}) {
@@ -166,8 +195,10 @@ export default function FireflyWorkbenchHome({
     const [selectedThreadKey, setSelectedThreadKey] = useState('');
     const [threadDetail, setThreadDetail] = useState(null);
     const [controlState, setControlState] = useState({
-        pending: false,
-        action: '',
+        pendingAction: '',
+        taskId: '',
+        stepId: '',
+        message: '',
         error: '',
     });
 
@@ -204,7 +235,12 @@ export default function FireflyWorkbenchHome({
             const response = await fetch(`/api/firefly/runtime?threadKey=${encodeURIComponent(nextThreadKey)}`, { cache: 'no-store' });
             const payload = await response.json();
             if (payload?.ok && payload.thread) {
-                setThreadDetail(payload.thread);
+                setThreadDetail({
+                    thread: payload.thread,
+                    threadState: payload.threadState || null,
+                    subagents: Array.isArray(payload.subagents) ? payload.subagents : [],
+                    workspace: payload.workspace || null,
+                });
                 return;
             }
             setThreadDetail(null);
@@ -360,55 +396,137 @@ export default function FireflyWorkbenchHome({
         onStartChat?.(nextPrompt);
     };
 
-    const handleControlAction = async (action) => {
-        const taskId = String(threadDetail?.activeTask?.id || '').trim();
+    const handleControlAction = async (action, task = activeTask, stepId = '') => {
+        const taskId = String(task?.id || '').trim();
         if (!taskId) {
             return;
         }
 
         setControlState({
-            pending: true,
-            action,
+            pendingAction: action,
+            taskId,
+            stepId,
+            message: '',
             error: '',
         });
 
         try {
-            const response = await fetch('/api/firefly/runtime/control', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action,
-                    taskId,
-                    uid: userProfile.uid,
-                    fid: userProfile.fid,
-                }),
+            const result = await requestFireflyRuntimeControl({
+                action,
+                taskId,
+                stepId,
+                uid: userProfile.uid,
+                fid: userProfile.fid,
             });
-            const payload = await response.json();
-            if (!response.ok || !payload?.ok) {
-                throw new Error(payload?.error || '控制任务失败');
+
+            if (result.task?.id) {
+                upsertFireflyTask(result.task);
             }
 
             await loadRuntimeSnapshot();
-            await loadThreadDetail(selectedThreadKey);
+            await loadThreadDetail(String(result.task?.threadKey || selectedThreadKey || task?.threadKey || '').trim());
             setControlState({
-                pending: false,
-                action: '',
+                pendingAction: '',
+                taskId,
+                stepId,
+                message: result.message,
                 error: '',
             });
         } catch (error) {
             setControlState({
-                pending: false,
-                action: '',
+                pendingAction: '',
+                taskId,
+                stepId,
+                message: '',
                 error: error instanceof Error ? error.message : '控制任务失败',
             });
         }
     };
 
     const selectedSession = sessionItems.find((item) => item.threadKey === selectedThreadKey) || sessionItems[0] || null;
-    const activeTask = threadDetail?.activeTask || selectedSession?.activeTask || null;
-    const recentEvents = Array.isArray(threadDetail?.events) ? threadDetail.events.slice(0, 8) : [];
+    const selectedThread = threadDetail?.thread || null;
+    const activeTask = selectedThread?.activeTask || selectedSession?.activeTask || null;
+    const recentEvents = Array.isArray(selectedThread?.events) ? selectedThread.events.slice(0, 8) : [];
+    const selectedThreadState = threadDetail?.threadState && typeof threadDetail.threadState === 'object'
+        ? threadDetail.threadState
+        : null;
+    const selectedWorkspace = threadDetail?.workspace && typeof threadDetail.workspace === 'object'
+        ? threadDetail.workspace
+        : null;
+    const selectedThreadTodoCount = Array.isArray(selectedThreadState?.todos) ? selectedThreadState.todos.length : 0;
+    const selectedThreadArtifactCount = Array.isArray(selectedThreadState?.artifacts) ? selectedThreadState.artifacts.length : 0;
+    const selectedThreadTodos = Array.isArray(selectedThreadState?.todos) ? selectedThreadState.todos.slice(0, 4) : [];
+    const selectedThreadArtifacts = Array.isArray(selectedThreadState?.artifacts) ? selectedThreadState.artifacts.slice(0, 3) : [];
+    const selectedWorkspaceFiles = Array.isArray(selectedWorkspace?.workspaceEntries) ? selectedWorkspace.workspaceEntries.slice(0, 4) : [];
+    const selectedOutputFiles = Array.isArray(selectedWorkspace?.outputEntries) ? selectedWorkspace.outputEntries.slice(0, 4) : [];
+    const selectedThreadSubagents = (() => {
+        const runs = Array.isArray(threadDetail?.subagents) ? threadDetail.subagents : [];
+        if (!runs.length) {
+            return [];
+        }
+
+        const filtered = runs.filter((item) => (
+            item.parentTaskId === activeTask?.id
+            || item.parentRunId === selectedThread?.activeRun?.id
+            || item.parentRunId === activeTask?.runId
+        ));
+        const preferred = filtered.length > 0 ? filtered : runs;
+
+        return [...preferred]
+            .sort((left, right) => (
+                new Date(right.updatedAt || right.createdAt || 0).getTime()
+                - new Date(left.updatedAt || left.createdAt || 0).getTime()
+            ))
+            .slice(0, 6);
+    })();
+    const selectedThreadSubagentSummary = {
+        running: selectedThreadSubagents.filter((item) => item.status === 'running').length,
+        failed: selectedThreadSubagents.filter((item) => item.status === 'failed').length,
+        completed: selectedThreadSubagents.filter((item) => item.status === 'completed').length,
+    };
+    const heroMetrics = useMemo(() => ([
+        {
+            label: '可恢复线程',
+            value: sessionItems.length,
+            hint: '已经进入任务化记录的会话',
+        },
+        {
+            label: '在途任务',
+            value: inbox.running.length + inbox.waiting.length,
+            hint: '仍在推进或等待授权',
+        },
+        {
+            label: '能力供给',
+            value: `${marketAccess.enabledSkillIds?.length || 0} / ${marketAccess.enabledMcpIds?.length || 0}`,
+            hint: '启用 Skill / MCP',
+        },
+    ]), [inbox.running.length, inbox.waiting.length, marketAccess.enabledMcpIds?.length, marketAccess.enabledSkillIds?.length, sessionItems.length]);
+    const threadRuntimeCards = [
+        {
+            label: '线程状态',
+            value: formatTaskStatus(selectedThreadState?.status || selectedSession?.status || ''),
+            hint: selectedThreadState?.threadKey || selectedSession?.threadKey || '当前线程',
+        },
+        {
+            label: '投影待办',
+            value: selectedThreadTodoCount,
+            hint: selectedThreadState?.lastTaskId || '尚未同步',
+        },
+        {
+            label: '线程产物',
+            value: selectedThreadArtifactCount,
+            hint: selectedThreadState?.latestCheckpoint?.label || '暂无检查点',
+        },
+        {
+            label: 'Subagent',
+            value: selectedThreadSubagents.length,
+            hint: selectedThreadSubagentSummary.running > 0
+                ? `执行中 ${selectedThreadSubagentSummary.running}`
+                : selectedThreadSubagentSummary.failed > 0
+                    ? `失败 ${selectedThreadSubagentSummary.failed}`
+                    : '已进入可追踪运行',
+        },
+    ];
 
     return (
         <main className="firefly-workbench">
@@ -420,11 +538,25 @@ export default function FireflyWorkbenchHome({
                     </div>
                     <h1>从对话入口，升级成任务会话入口</h1>
                     <p>这里不只是发一条消息，而是启动一个能被规划、执行、恢复和持续推进的 Agent 会话。你可以在这里看当前环境、打开最近会话，并直接进入任务收件箱。</p>
+                    <div className="firefly-workbench-hero-metrics">
+                        {heroMetrics.map((item) => (
+                            <div key={item.label} className="firefly-workbench-hero-metric">
+                                <small>{item.label}</small>
+                                <strong>{item.value}</strong>
+                                <span>{item.hint}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <div className="firefly-workbench-launch glass">
                     <div className="firefly-workbench-launch-head">
                         <strong>发起一个新任务</strong>
                         <span>{resolveChatModel(preferredModelId).label}</span>
+                    </div>
+                    <div className="firefly-launch-meta">
+                        <span>{webSearchEnabled ? '联网搜索已打开' : '默认离线执行'}</span>
+                        <span>{deepResearchEnabled ? '深度研究可用' : '常规推理模式'}</span>
+                        <span>{selectedCapabilityIds.length} 个能力域</span>
                     </div>
                     <textarea
                         value={composerValue}
@@ -466,7 +598,7 @@ export default function FireflyWorkbenchHome({
                             >
                                 <div className="firefly-session-top">
                                     <strong>{session.title}</strong>
-                                    <span className={`firefly-status-pill ${session.status}`}>{session.status}</span>
+                                    <span className={`firefly-status-pill ${session.status}`}>{formatTaskStatus(session.status)}</span>
                                 </div>
                                 <p>{session.summary || '当前会话尚未沉淀出结果摘要。'}</p>
                                 <small>{formatDateTime(session.updatedAt)}</small>
@@ -538,7 +670,7 @@ export default function FireflyWorkbenchHome({
                         <div className="firefly-thread-detail">
                             <div className="firefly-thread-summary">
                                 <strong>{selectedSession.title}</strong>
-                                <span className={`firefly-status-pill ${selectedSession.status}`}>{selectedSession.status}</span>
+                                <span className={`firefly-status-pill ${selectedSession.status}`}>{formatTaskStatus(selectedSession.status)}</span>
                             </div>
                             <p>{activeTask?.resultSummary || activeTask?.goal || '当前会话尚未沉淀出结果摘要。'}</p>
                             <div className="firefly-badge-list compact">
@@ -547,49 +679,148 @@ export default function FireflyWorkbenchHome({
                                 ))}
                                 {activeTask?.selectedSkillLabels?.length ? null : <span>暂无已命中能力</span>}
                             </div>
-                            {activeTask ? (
-                                <>
-                                    <div className="firefly-thread-actions">
-                                        <button
-                                            type="button"
-                                            className="firefly-pill-button"
-                                            disabled={controlState.pending}
-                                            onClick={() => handleControlAction('resume_plan')}
-                                        >
-                                            {controlState.pending && controlState.action === 'resume_plan' ? '恢复中…' : '恢复续跑'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="firefly-pill-button"
-                                            disabled={controlState.pending || activeTask.status !== 'failed'}
-                                            onClick={() => handleControlAction('retry_failed')}
-                                        >
-                                            {controlState.pending && controlState.action === 'retry_failed' ? '重试中…' : '失败步骤重试'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="firefly-pill-button"
-                                            disabled={controlState.pending}
-                                            onClick={() => handleControlAction('retry_full')}
-                                        >
-                                            {controlState.pending && controlState.action === 'retry_full' ? '重跑中…' : '整轮重试'}
-                                        </button>
+                            <div className="firefly-thread-runtime-grid">
+                                {threadRuntimeCards.map((item) => (
+                                    <div key={item.label} className="firefly-thread-runtime-card">
+                                        <small>{item.label}</small>
+                                        <strong>{item.value}</strong>
+                                        <span>{item.hint}</span>
                                     </div>
-                                    {controlState.error ? (
-                                        <div className="firefly-control-error">{controlState.error}</div>
-                                    ) : null}
-                                    <div className="firefly-step-list">
-                                        {(activeTask.steps || []).slice(0, 6).map((step) => (
-                                            <div key={step.id} className="firefly-step-row">
-                                                <div>
-                                                    <strong>{step.label}</strong>
-                                                    <p>{step.summary || step.purpose || '等待步骤说明。'}</p>
-                                                </div>
-                                                <span className={`firefly-status-pill ${step.status}`}>{step.status}</span>
+                                ))}
+                            </div>
+                            {selectedThreadState ? (
+                                <div className="firefly-thread-runtime-surface">
+                                    <div className="firefly-thread-runtime-column">
+                                        <div className="firefly-thread-runtime-head">
+                                            <strong>线程投影</strong>
+                                            <span>{selectedThreadState.latestCheckpoint?.label || '暂无检查点'}</span>
+                                        </div>
+                                        <div className="firefly-thread-runtime-paths">
+                                            <div>
+                                                <small>工作区</small>
+                                                <span title={selectedThreadState.workspacePath || ''}>{summarizePath(selectedThreadState.workspacePath)}</span>
                                             </div>
-                                        ))}
+                                            <div>
+                                                <small>上传区</small>
+                                                <span title={selectedThreadState.uploadsPath || ''}>{summarizePath(selectedThreadState.uploadsPath)}</span>
+                                            </div>
+                                            <div>
+                                                <small>输出区</small>
+                                                <span title={selectedThreadState.outputsPath || ''}>{summarizePath(selectedThreadState.outputsPath)}</span>
+                                            </div>
+                                        </div>
+                                        {selectedWorkspace ? (
+                                            <div className="firefly-thread-runtime-file-groups">
+                                                <div className="firefly-thread-runtime-file-group">
+                                                    <small>Workspace 文件</small>
+                                                    <div className="firefly-thread-runtime-artifacts">
+                                                        {selectedWorkspaceFiles.length > 0 ? selectedWorkspaceFiles.map((item) => (
+                                                            item.kind === 'file' ? (
+                                                                <a
+                                                                    key={`workspace-${item.relativePath}`}
+                                                                    href={`/api/firefly/runtime/workspace?threadKey=${encodeURIComponent(selectedThread?.threadKey || selectedSession?.threadKey || '')}&zone=workspace&path=${encodeURIComponent(item.relativePath)}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                >
+                                                                    {item.relativePath}
+                                                                </a>
+                                                            ) : (
+                                                                <span key={`workspace-${item.relativePath}`}>{item.relativePath}/</span>
+                                                            )
+                                                        )) : <span>暂无</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="firefly-thread-runtime-file-group">
+                                                    <small>Outputs 文件</small>
+                                                    <div className="firefly-thread-runtime-artifacts">
+                                                        {selectedOutputFiles.length > 0 ? selectedOutputFiles.map((item) => (
+                                                            item.kind === 'file' ? (
+                                                                <a
+                                                                    key={`output-${item.relativePath}`}
+                                                                    href={`/api/firefly/runtime/workspace?threadKey=${encodeURIComponent(selectedThread?.threadKey || selectedSession?.threadKey || '')}&zone=outputs&path=${encodeURIComponent(item.relativePath)}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                >
+                                                                    {item.relativePath}
+                                                                </a>
+                                                            ) : (
+                                                                <span key={`output-${item.relativePath}`}>{item.relativePath}/</span>
+                                                            )
+                                                        )) : <span>暂无</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                        <div className="firefly-thread-runtime-list">
+                                            {selectedThreadTodos.length > 0 ? selectedThreadTodos.map((item) => (
+                                                <div key={item.id} className="firefly-thread-runtime-item">
+                                                    <strong>{item.label}</strong>
+                                                    <span>{formatTaskStatus(item.status)}</span>
+                                                    <small>{item.summary || '当前待办暂无补充说明。'}</small>
+                                                </div>
+                                            )) : (
+                                                <div className="firefly-empty-state">当前线程还没有可展示的投影待办。</div>
+                                            )}
+                                        </div>
                                     </div>
-                                </>
+
+                                    <div className="firefly-thread-runtime-column">
+                                        <div className="firefly-thread-runtime-head">
+                                            <strong>执行镜像</strong>
+                                            <span>{selectedThreadSubagents.length} 个 subagent</span>
+                                        </div>
+                                        <div className="firefly-subagent-summary">
+                                            <span>{selectedThreadSubagentSummary.completed} 已完成</span>
+                                            <span>{selectedThreadSubagentSummary.running} 执行中</span>
+                                            <span>{selectedThreadSubagentSummary.failed} 失败</span>
+                                        </div>
+                                        <div className="firefly-thread-runtime-list">
+                                            {selectedThreadSubagents.length > 0 ? selectedThreadSubagents.map((item) => (
+                                                <div key={item.id} className="firefly-thread-runtime-item">
+                                                    <strong>{item.label}</strong>
+                                                    <span>{formatTaskStatus(item.status)} · {item.toolId || '未标记工具'}</span>
+                                                    <small>{item.summary || item.error || '当前 subagent 暂无额外摘要。'}</small>
+                                                </div>
+                                            )) : (
+                                                <div className="firefly-empty-state">当前线程还没有 subagent 明细。</div>
+                                            )}
+                                            {selectedThreadArtifacts.length > 0 ? (
+                                                <div className="firefly-thread-runtime-artifacts">
+                                                    {selectedThreadArtifacts.map((item) => (
+                                                        item.href ? (
+                                                            <a key={item.id} href={item.href} target="_blank" rel="noreferrer" title={item.relativePath || item.fileName || item.label}>
+                                                                {item.label}
+                                                            </a>
+                                                        ) : (
+                                                            <span key={item.id} title={item.relativePath || item.fileName || item.label}>
+                                                                {item.label}
+                                                            </span>
+                                                        )
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
+                            <FireflyControlPlanePanel
+                                surface="workbench"
+                                threadKey={selectedThread?.threadKey || selectedSession?.threadKey || ''}
+                                activeTask={activeTask}
+                                userProfile={userProfile}
+                                capabilityIds={activeTask?.capabilityIds || selectedSession?.capabilityIds || selectedCapabilityIds}
+                                marketAccess={marketAccess}
+                                contextSnapshot={activeTask?.contextSnapshot || selectedThread?.session?.contextSnapshot || null}
+                                className="firefly-thread-control-plane"
+                                defaultExpanded={false}
+                            />
+                            {activeTask ? (
+                                <FireflyRuntimeCard
+                                    task={activeTask}
+                                    controlState={controlState}
+                                    onControlAction={handleControlAction}
+                                    timeLabel={formatDateTime(activeTask.updatedAt)}
+                                />
                             ) : null}
                         </div>
                     )}

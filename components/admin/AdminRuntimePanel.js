@@ -120,6 +120,41 @@ function formatWorkerStatus(status = '') {
     return status || '待开始';
 }
 
+function formatThreadStatus(status = '') {
+    if (status === 'booting') return '引导中';
+    if (status === 'planned') return '已规划';
+    if (status === 'planning') return '规划中';
+    if (status === 'completed') return '已完成';
+    if (status === 'failed') return '失败';
+    if (status === 'running') return '执行中';
+    if (status === 'idle') return '空闲';
+    return status || '未记录';
+}
+
+function formatProjectedTodoStatus(status = '') {
+    if (status === 'completed') return '已完成';
+    if (status === 'failed') return '失败';
+    if (status === 'in_progress') return '进行中';
+    if (status === 'running') return '执行中';
+    return status || '待开始';
+}
+
+function summarizeIdList(items = [], limit = 2) {
+    const normalized = Array.isArray(items)
+        ? items.filter(Boolean).map((item) => String(item).trim()).filter(Boolean)
+        : [];
+
+    if (!normalized.length) {
+        return '未关联';
+    }
+
+    if (normalized.length <= limit) {
+        return normalized.join('、');
+    }
+
+    return `${normalized.slice(0, limit).join('、')} 等 ${normalized.length} 项`;
+}
+
 function formatPlannerVerdict(verdict = '') {
     if (verdict === 'revised') return '已修正';
     if (verdict === 'accepted') return '已通过';
@@ -158,6 +193,12 @@ export default function AdminRuntimePanel({ initialRuntime }) {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [lastUpdatedAt, setLastUpdatedAt] = useState(() => new Date().toISOString());
     const [selectedTaskId, setSelectedTaskId] = useState('');
+    const [selectedThreadRuntime, setSelectedThreadRuntime] = useState({
+        thread: null,
+        threadState: null,
+        subagents: [],
+    });
+    const [isThreadRuntimeLoading, setIsThreadRuntimeLoading] = useState(false);
     const [controlState, setControlState] = useState({
         pendingAction: '',
         taskId: '',
@@ -232,6 +273,53 @@ export default function AdminRuntimePanel({ initialRuntime }) {
         recentTasks.find((item) => item.id === selectedTaskId) || recentTasks[0] || null
     ), [recentTasks, selectedTaskId]);
 
+    useEffect(() => {
+        if (!selectedTask?.threadKey) {
+            setSelectedThreadRuntime({
+                thread: null,
+                threadState: null,
+                subagents: [],
+            });
+            setIsThreadRuntimeLoading(false);
+            return;
+        }
+
+        let disposed = false;
+
+        const loadSelectedThreadRuntime = async () => {
+            setIsThreadRuntimeLoading(true);
+
+            try {
+                const response = await fetch(`/api/firefly/runtime?threadKey=${encodeURIComponent(selectedTask.threadKey)}`, {
+                    cache: 'no-store',
+                });
+                const payload = await response.json();
+
+                if (!disposed && payload?.ok) {
+                    setSelectedThreadRuntime({
+                        thread: payload.thread || null,
+                        threadState: payload.threadState || null,
+                        subagents: Array.isArray(payload.subagents) ? payload.subagents : [],
+                    });
+                }
+            } catch (error) {
+                if (!disposed) {
+                    console.error('Failed to load firefly thread runtime detail:', error);
+                }
+            } finally {
+                if (!disposed) {
+                    setIsThreadRuntimeLoading(false);
+                }
+            }
+        };
+
+        loadSelectedThreadRuntime();
+
+        return () => {
+            disposed = true;
+        };
+    }, [selectedTask?.threadKey, selectedTask?.id, selectedTask?.updatedAt, selectedTask?.runId, selectedTask?.status, lastUpdatedAt]);
+
     const taskSummary = useMemo(() => summarizeTask(selectedTask), [selectedTask]);
     const selectedTaskOutputs = useMemo(() => buildTaskOutputs(selectedTask), [selectedTask]);
     const selectedTaskEvents = useMemo(() => {
@@ -272,6 +360,18 @@ export default function AdminRuntimePanel({ initialRuntime }) {
             ? selectedTaskPlanMetadata.plannerReview
             : {}
     ), [selectedTaskPlanMetadata]);
+    const selectedPlannerSelfRevisions = useMemo(() => (
+        Array.isArray(selectedPlannerReview?.selfRevisions)
+            ? selectedPlannerReview.selfRevisions
+            : Array.isArray(selectedPlannerReview?.revisions)
+                ? selectedPlannerReview.revisions
+                : []
+    ), [selectedPlannerReview]);
+    const selectedPlannerGovernanceInfluences = useMemo(() => (
+        Array.isArray(selectedPlannerReview?.governanceInfluences)
+            ? selectedPlannerReview.governanceInfluences
+            : []
+    ), [selectedPlannerReview]);
     const selectedToolSelectionControl = useMemo(() => (
         selectedTaskPlanMetadata?.toolSelectionControl && typeof selectedTaskPlanMetadata.toolSelectionControl === 'object'
             ? selectedTaskPlanMetadata.toolSelectionControl
@@ -300,6 +400,60 @@ export default function AdminRuntimePanel({ initialRuntime }) {
     const selectedSubtasks = useMemo(() => (
         Array.isArray(selectedTask?.subtasks) ? selectedTask.subtasks : []
     ), [selectedTask]);
+    const selectedThreadState = useMemo(() => (
+        selectedThreadRuntime?.threadState && typeof selectedThreadRuntime.threadState === 'object'
+            ? selectedThreadRuntime.threadState
+            : null
+    ), [selectedThreadRuntime]);
+    const selectedThreadTodos = useMemo(() => (
+        Array.isArray(selectedThreadState?.todos) ? selectedThreadState.todos : []
+    ), [selectedThreadState]);
+    const selectedThreadArtifacts = useMemo(() => (
+        Array.isArray(selectedThreadState?.artifacts) ? selectedThreadState.artifacts : []
+    ), [selectedThreadState]);
+    const selectedThreadPaths = useMemo(() => ([
+        {
+            label: '工作区',
+            value: selectedThreadState?.workspacePath || selectedTask?.contextSnapshot?.threadData?.workspacePath || '',
+        },
+        {
+            label: '上传区',
+            value: selectedThreadState?.uploadsPath || selectedTask?.contextSnapshot?.threadData?.uploadsPath || '',
+        },
+        {
+            label: '输出区',
+            value: selectedThreadState?.outputsPath || selectedTask?.contextSnapshot?.threadData?.outputsPath || '',
+        },
+    ]), [selectedTask, selectedThreadState]);
+    const selectedThreadLatestCheckpoint = useMemo(() => (
+        selectedThreadState?.latestCheckpoint && typeof selectedThreadState.latestCheckpoint === 'object'
+            ? selectedThreadState.latestCheckpoint
+            : null
+    ), [selectedThreadState]);
+    const selectedTaskSubagentRuns = useMemo(() => {
+        const runs = Array.isArray(selectedThreadRuntime?.subagents) ? selectedThreadRuntime.subagents : [];
+        if (!runs.length || !selectedTask) {
+            return [];
+        }
+
+        const matches = runs.filter((item) => (
+            item.parentTaskId === selectedTask.id
+            || item.parentRunId === selectedTask.runId
+        ));
+        const preferredRuns = matches.length > 0 ? matches : runs;
+
+        return [...preferredRuns]
+            .sort((left, right) => (
+                new Date(right.updatedAt || right.createdAt || 0).getTime()
+                - new Date(left.updatedAt || left.createdAt || 0).getTime()
+            ))
+            .slice(0, 12);
+    }, [selectedTask, selectedThreadRuntime]);
+    const subagentStatusSummary = useMemo(() => ({
+        running: selectedTaskSubagentRuns.filter((item) => item.status === 'running').length,
+        failed: selectedTaskSubagentRuns.filter((item) => item.status === 'failed').length,
+        completed: selectedTaskSubagentRuns.filter((item) => item.status === 'completed').length,
+    }), [selectedTaskSubagentRuns]);
 
     const handleControlAction = async (action, stepId = '') => {
         if (!selectedTask?.id) {
@@ -539,6 +693,149 @@ export default function AdminRuntimePanel({ initialRuntime }) {
                             <div className="admin-runtime-columns">
                                 <div className="admin-runtime-block">
                                     <div className="admin-runtime-subhead">
+                                        <h4>Thread State / Deer Runtime</h4>
+                                        <small>看线程态、目录投影、todo/artifact 和最新检查点是否真的被 runtime 接住</small>
+                                    </div>
+                                    <div className="admin-runtime-chip-row">
+                                        <span className="admin-runtime-chip">{formatThreadStatus(selectedThreadState?.status || selectedTask?.status)}</span>
+                                        <span className="admin-runtime-chip">{selectedThreadTodos.length} 个投影待办</span>
+                                        <span className="admin-runtime-chip">{selectedThreadArtifacts.length} 个线程产物</span>
+                                        <span className="admin-runtime-chip">{selectedTaskSubagentRuns.length} 个 subagent</span>
+                                        {selectedThreadLatestCheckpoint ? (
+                                            <span className="admin-runtime-chip success">最新检查点 {selectedThreadLatestCheckpoint.label || selectedThreadLatestCheckpoint.id}</span>
+                                        ) : null}
+                                    </div>
+                                    {isThreadRuntimeLoading ? (
+                                        <div className="admin-runtime-empty">正在拉取当前线程的运行态详情…</div>
+                                    ) : selectedThreadState ? (
+                                        <div className="admin-runtime-section-stack">
+                                            <div className="admin-runtime-stat-grid admin-runtime-stat-grid-compact">
+                                                <div className="admin-runtime-stat-card">
+                                                    <small>线程键</small>
+                                                    <strong>{selectedThreadState.threadKey || selectedTask.threadKey || '未记录'}</strong>
+                                                </div>
+                                                <div className="admin-runtime-stat-card">
+                                                    <small>最后任务</small>
+                                                    <strong>{selectedThreadState.lastTaskId || '未记录'}</strong>
+                                                </div>
+                                                <div className="admin-runtime-stat-card">
+                                                    <small>最后运行</small>
+                                                    <strong>{selectedThreadState.lastRunId || selectedTask.runId || '未记录'}</strong>
+                                                </div>
+                                                <div className="admin-runtime-stat-card">
+                                                    <small>线程更新时间</small>
+                                                    <strong>{formatDateTime(selectedThreadState.updatedAt)}</strong>
+                                                </div>
+                                            </div>
+                                            <div className="admin-runtime-list">
+                                                {selectedThreadPaths.map((item) => (
+                                                    <div key={item.label} className="admin-runtime-item">
+                                                        <strong>{item.label}</strong>
+                                                        <small className="admin-runtime-item-path">{item.value || '未建立目录'}</small>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {selectedThreadLatestCheckpoint ? (
+                                                <div className="admin-runtime-item">
+                                                    <strong>{selectedThreadLatestCheckpoint.label || '最新检查点'}</strong>
+                                                    <span>{selectedThreadLatestCheckpoint.status || 'pending'} · 批次 {selectedThreadLatestCheckpoint.batchIndex || '-'}</span>
+                                                    <small>{selectedThreadLatestCheckpoint.summary || '当前检查点暂无补充说明。'} · {formatDateTime(selectedThreadLatestCheckpoint.createdAt)}</small>
+                                                    <div className="admin-runtime-chip-row">
+                                                        <span className="admin-runtime-chip">{selectedThreadLatestCheckpoint.stepIds?.length || 0} 个步骤</span>
+                                                        <span className="admin-runtime-chip">{selectedThreadLatestCheckpoint.workerIds?.length || 0} 个 worker</span>
+                                                        <span className="admin-runtime-chip success">{selectedThreadLatestCheckpoint.subagentRunIds?.length || 0} 个 subagent</span>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                            <div className="admin-runtime-columns">
+                                                <div className="admin-runtime-block">
+                                                    <div className="admin-runtime-subhead">
+                                                        <h4>线程待办投影</h4>
+                                                        <small>当前 thread state 里保存的 todo 快照</small>
+                                                    </div>
+                                                    <div className="admin-runtime-list">
+                                                        {selectedThreadTodos.length > 0 ? selectedThreadTodos.slice(0, 6).map((todo) => (
+                                                            <div key={todo.id} className="admin-runtime-item">
+                                                                <strong>{todo.label}</strong>
+                                                                <span>{formatProjectedTodoStatus(todo.status)}{todo.linkedToolIds?.length ? ` · ${todo.linkedToolIds.join('、')}` : ''}</span>
+                                                                <small>{todo.summary || '当前待办暂无额外摘要。'}</small>
+                                                            </div>
+                                                        )) : (
+                                                            <div className="admin-runtime-empty">当前线程还没有投影待办。</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="admin-runtime-block">
+                                                    <div className="admin-runtime-subhead">
+                                                        <h4>线程产物投影</h4>
+                                                        <small>看结果是否已经沉淀到可恢复的线程产物里</small>
+                                                    </div>
+                                                    <div className="admin-runtime-list">
+                                                        {selectedThreadArtifacts.length > 0 ? selectedThreadArtifacts.slice(0, 6).map((artifact) => (
+                                                            <div key={artifact.id} className="admin-runtime-item">
+                                                                <strong>{artifact.label}</strong>
+                                                                <span>{artifact.type || 'summary'}</span>
+                                                                <small>{artifact.href || '当前产物暂无链接。'} · {formatDateTime(artifact.updatedAt)}</small>
+                                                            </div>
+                                                        )) : (
+                                                            <div className="admin-runtime-empty">当前线程还没有沉淀产物。</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="admin-runtime-empty">当前任务还没有拉到 Deer runtime 的线程态详情。</div>
+                                    )}
+                                </div>
+
+                                <div className="admin-runtime-block">
+                                    <div className="admin-runtime-subhead">
+                                        <h4>Subagent Runs</h4>
+                                        <small>看并发执行有没有真正进入“子代理批次”，而不是停留在 Promise.all</small>
+                                    </div>
+                                    <div className="admin-runtime-chip-row">
+                                        <span className="admin-runtime-chip">{selectedTaskSubagentRuns.length} 个运行单元</span>
+                                        <span className="admin-runtime-chip">{subagentStatusSummary.completed} 个已完成</span>
+                                        {subagentStatusSummary.running > 0 ? (
+                                            <span className="admin-runtime-chip">执行中 {subagentStatusSummary.running}</span>
+                                        ) : null}
+                                        {subagentStatusSummary.failed > 0 ? (
+                                            <span className="admin-runtime-chip danger">失败 {subagentStatusSummary.failed}</span>
+                                        ) : null}
+                                    </div>
+                                    <div className="admin-runtime-list">
+                                        {isThreadRuntimeLoading ? (
+                                            <div className="admin-runtime-empty">正在同步 subagent 运行明细…</div>
+                                        ) : selectedTaskSubagentRuns.length > 0 ? selectedTaskSubagentRuns.map((item) => {
+                                            const isLinkedToLatestCheckpoint = selectedThreadLatestCheckpoint?.subagentRunIds?.includes(item.id);
+
+                                            return (
+                                                <div key={item.id} className="admin-runtime-item">
+                                                    <strong>{item.label}</strong>
+                                                    <span>{formatWorkerStatus(item.status)} · {item.toolId || '未绑定工具'}</span>
+                                                    <small>{item.summary || item.error || '当前运行单元暂无额外摘要。'} · {formatDateTime(item.updatedAt || item.createdAt)}</small>
+                                                    <div className="admin-runtime-chip-row">
+                                                        <span className="admin-runtime-chip">trace {item.traceId}</span>
+                                                        {item.workerId ? <span className="admin-runtime-chip">worker {item.workerId}</span> : null}
+                                                        {item.stepId ? <span className="admin-runtime-chip">step {item.stepId}</span> : null}
+                                                        {item.subtaskId ? <span className="admin-runtime-chip">subtask {item.subtaskId}</span> : null}
+                                                        {item.parentRunId ? <span className="admin-runtime-chip">run {item.parentRunId}</span> : null}
+                                                        {isLinkedToLatestCheckpoint ? <span className="admin-runtime-chip success">已写入最新检查点</span> : null}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }) : (
+                                            <div className="admin-runtime-empty">当前任务还没有记录到 subagent 执行明细。</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="admin-runtime-columns">
+                                <div className="admin-runtime-block">
+                                    <div className="admin-runtime-subhead">
                                         <h4>规划自检 / 工具选择</h4>
                                         <small>看 planner 有没有自反馈、修正和明确的工具裁剪</small>
                                     </div>
@@ -552,7 +849,7 @@ export default function AdminRuntimePanel({ initialRuntime }) {
                                         ) : null}
                                     </div>
                                     <div className="admin-runtime-list">
-                                        {(selectedPlannerReview.revisions || []).length > 0 ? selectedPlannerReview.revisions.map((item, index) => (
+                                        {selectedPlannerSelfRevisions.length > 0 ? selectedPlannerSelfRevisions.map((item, index) => (
                                             <div key={`planner-revision-${index + 1}`} className="admin-runtime-item">
                                                 <strong>修正 {index + 1}</strong>
                                                 <span>planner_review</span>
@@ -561,6 +858,14 @@ export default function AdminRuntimePanel({ initialRuntime }) {
                                         )) : (
                                             <div className="admin-runtime-empty">本轮规划没有触发额外修正，已经直接通过自检。</div>
                                         )}
+
+                                        {selectedPlannerGovernanceInfluences.length > 0 ? selectedPlannerGovernanceInfluences.map((item, index) => (
+                                            <div key={`governance-influence-${index + 1}`} className="admin-runtime-item">
+                                                <strong>治理影响 {index + 1}</strong>
+                                                <span>front_control_plane</span>
+                                                <small>{item}</small>
+                                            </div>
+                                        )) : null}
 
                                         {(selectedToolSelectionControl.selectedTools || []).length > 0 ? selectedToolSelectionControl.selectedTools.map((tool) => (
                                             <div key={`selected-tool-${tool.id}`} className="admin-runtime-item">
@@ -707,6 +1012,17 @@ export default function AdminRuntimePanel({ initialRuntime }) {
                                                 <strong>{item.label}</strong>
                                                 <span>{item.status} · 阶段 {item.batchIndex || '-'}</span>
                                                 <small>{item.summary || '当前检查点暂无补充说明'} · {formatDateTime(item.createdAt)}</small>
+                                                <div className="admin-runtime-chip-row">
+                                                    {item.stepIds?.length ? (
+                                                        <span className="admin-runtime-chip">步骤 {summarizeIdList(item.stepIds)}</span>
+                                                    ) : null}
+                                                    {item.workerIds?.length ? (
+                                                        <span className="admin-runtime-chip">worker {summarizeIdList(item.workerIds)}</span>
+                                                    ) : null}
+                                                    {item.subagentRunIds?.length ? (
+                                                        <span className="admin-runtime-chip success">subagent {summarizeIdList(item.subagentRunIds)}</span>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         )) : (
                                             <div className="admin-runtime-empty">当前还没有检查点记录。</div>

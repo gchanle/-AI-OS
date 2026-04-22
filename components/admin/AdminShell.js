@@ -1,8 +1,8 @@
 'use client';
 
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
 import CampusUserBootstrap from '@/components/CampusUserBootstrap';
 import {
     getDefaultCampusUserProfile,
@@ -64,7 +64,9 @@ export default function AdminShell({ children }) {
 
     return (
         <div className="admin-root">
-            <CampusUserBootstrap />
+            <Suspense fallback={null}>
+                <CampusUserBootstrap />
+            </Suspense>
             <header className="admin-topbar">
                 <div className="admin-topbar-inner">
                     <Link href="/admin" className="admin-brand">

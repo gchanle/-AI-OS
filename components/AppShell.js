@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import GlobalFireflyDrawer from '@/components/GlobalFireflyDrawer';
@@ -16,7 +17,9 @@ export default function AppShell({ children }) {
 
     return (
         <>
-            <CampusUserBootstrap />
+            <Suspense fallback={null}>
+                <CampusUserBootstrap />
+            </Suspense>
             <Navbar />
             <main style={{ marginTop: 'var(--navbar-height)' }}>
                 {children}

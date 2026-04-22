@@ -267,6 +267,14 @@
     flex-wrap: wrap;
 }
 
+.firefly-side-control-plane {
+    flex: none;
+}
+
+.firefly-side-control-plane .firefly-control-plane-copy p {
+    max-width: none;
+}
+
 .firefly-side-chip {
     min-height: 30px;
     padding: 0 10px;
@@ -322,6 +330,19 @@
 
 .firefly-side-message.ai {
     align-items: flex-start;
+}
+
+.firefly-side-message-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 92%;
+    width: 100%;
+    min-width: 0;
+}
+
+.firefly-side-message-stack .firefly-side-message-body {
+    max-width: 100%;
 }
 
 .firefly-side-message-body {

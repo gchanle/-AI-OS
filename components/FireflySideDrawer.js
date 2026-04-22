@@ -21,10 +21,14 @@ import {
     buildSkillDefinitions,
     loadSkillDefinitionState,
 } from '@/data/skills';
-import { loadCampusUserProfile } from '@/data/userProfile';
+import {
+    loadCampusUserProfile,
+    subscribeCampusUserProfile,
+} from '@/data/userProfile';
 import {
     buildCapabilityMarketAccessContextFromCatalog,
     loadUserCapabilityInstalls,
+    subscribeUserCapabilityInstalls,
 } from '@/data/capabilityMarket';
 import {
     CAMPUS_OPEN_FIREFLY_EVENT,
@@ -38,11 +42,18 @@ import {
     resolveChatModel,
 } from '@/data/workspace';
 import {
+    isFireflyRuntimeTaskStreaming,
+    requestFireflyRuntimeControl,
+    resolveFireflyRuntimeTaskPhase,
+} from '@/lib/fireflyRuntimeControlClient';
+import { shouldInjectCampusContext as shouldInjectCampusContextForQuestion } from '@/lib/fireflyResponseMode';
+import {
     buildApprovalSummary,
     buildUnreadSummary,
     renderRichMessageContent,
 } from '@/components/RichMessageContent';
-import FireflyRuntimeCard from '@/components/FireflyRuntimeCard';
+import FireflyControlPlanePanel from '@/components/FireflyControlPlanePanel';
+import FireflyRuntimeStrip from '@/components/FireflyRuntimeStrip';
 import './FireflySideDrawer.css';
 
 function uid(prefix) {
@@ -63,6 +74,39 @@ function normalizeThread(items = []) {
             time: item.time || new Date().toISOString(),
             streaming: Boolean(item.streaming),
         }));
+}
+
+function buildRenderableMessages(messages = []) {
+    const blocks = [];
+
+    for (let index = 0; index < messages.length; index += 1) {
+        const current = messages[index];
+        const next = messages[index + 1];
+
+        if (
+            current?.messageKind === 'runtime-trace'
+            && current?.runtimeTask
+            && next?.role === 'ai'
+            && next?.messageKind === 'assistant-final'
+        ) {
+            blocks.push({
+                type: 'assistant-with-runtime',
+                assistant: next,
+                runtime: current,
+                key: `drawer-assistant-runtime-${current.id || index}-${next.id || index + 1}`,
+            });
+            index += 1;
+            continue;
+        }
+
+        blocks.push({
+            type: 'message',
+            message: current,
+            key: `drawer-message-${current?.id || index}`,
+        });
+    }
+
+    return blocks;
 }
 
 function shouldAttachUnreadSummary(question = '') {
@@ -261,6 +305,22 @@ function persistWorkspacePreferredModel(modelId) {
     mergeWorkspacePrefs({ modelId });
 }
 
+function appendAgentModelDisclosure(content = '', modelId = '') {
+    const normalized = String(content || '').trim();
+    const label = String(resolveChatModel(modelId)?.label || modelId || '大模型').trim();
+    const disclosure = `本次回复来自“${label}”整理生成，请注意甄别。`;
+
+    if (!normalized) {
+        return disclosure;
+    }
+
+    if (normalized.includes(disclosure)) {
+        return normalized;
+    }
+
+    return `${normalized}\n\n---\n\n${disclosure}`;
+}
+
 export default function FireflySideDrawer({
     isOpen,
     onOpenChange,
@@ -310,6 +370,15 @@ export default function FireflySideDrawer({
     const [activeModelId, setActiveModelId] = useState(defaultChatModelId);
     const [internalOpen, setInternalOpen] = useState(false);
     const [launcherPosition, setLauncherPosition] = useState(0.72);
+    const [campusUserProfile, setCampusUserProfile] = useState(() => loadCampusUserProfile());
+    const [capabilityInstalls, setCapabilityInstalls] = useState(() => loadUserCapabilityInstalls(loadCampusUserProfile()));
+    const [runtimeControlState, setRuntimeControlState] = useState({
+        pendingAction: '',
+        taskId: '',
+        stepId: '',
+        message: '',
+        error: '',
+    });
 
     const shellRef = useRef(null);
     const textareaRef = useRef(null);
@@ -330,6 +399,17 @@ export default function FireflySideDrawer({
     const currentThread = useMemo(
         () => normalizeThread(threads[threadKey] || []),
         [threadKey, threads]
+    );
+    const drawerMarketAccess = useMemo(() => (
+        buildCapabilityMarketAccessContextFromCatalog({
+            skills: buildSkillDefinitions(loadSkillDefinitionState()),
+            mcps: buildMcpDefinitions(loadMcpDefinitionState()),
+            installs: capabilityInstalls,
+        }).marketAccess
+    ), [capabilityInstalls]);
+    const renderableMessages = useMemo(
+        () => buildRenderableMessages(currentThread),
+        [currentThread]
     );
     const activeModel = resolveChatModel(activeModelId);
     const enrichTaskForStorage = useCallback((task) => ({
@@ -357,6 +437,126 @@ export default function FireflySideDrawer({
         threadKey,
         title,
     ]);
+    const applyRuntimeControlResultToThread = useCallback((items = [], {
+        taskId = '',
+        nextTask = null,
+        nextReply = '',
+    } = {}) => {
+        const normalizedTaskId = String(taskId || '').trim();
+        if (!normalizedTaskId) {
+            return items;
+        }
+
+        const updated = Array.isArray(items) ? [...items] : [];
+        const traceIndex = updated.findIndex((message) => (
+            message?.messageKind === 'runtime-trace'
+            && String(message?.runtimeTask?.id || '').trim() === normalizedTaskId
+        ));
+
+        if (traceIndex < 0) {
+            return items;
+        }
+
+        const traceMessage = updated[traceIndex];
+        const nextRuntimeTask = nextTask || traceMessage.runtimeTask || null;
+
+        updated[traceIndex] = {
+            ...traceMessage,
+            runtimeTask: nextRuntimeTask,
+            runtimePhase: resolveFireflyRuntimeTaskPhase(nextRuntimeTask),
+            streaming: isFireflyRuntimeTaskStreaming(nextRuntimeTask),
+            time: new Date().toISOString(),
+            modelId: activeModelId,
+        };
+
+        if (nextReply) {
+            const assistantIndex = traceIndex + 1;
+            const assistantMessage = updated[assistantIndex];
+            const nextContent = appendAgentModelDisclosure(nextReply, activeModelId);
+
+            if (assistantMessage?.role === 'ai' && assistantMessage?.messageKind === 'assistant-final') {
+                updated[assistantIndex] = {
+                    ...assistantMessage,
+                    content: nextContent,
+                    streaming: false,
+                    time: new Date().toISOString(),
+                    modelId: activeModelId,
+                };
+            } else {
+                updated.splice(assistantIndex, 0, {
+                    id: uid('drawer-msg'),
+                    role: 'ai',
+                    content: nextContent,
+                    time: new Date().toISOString(),
+                    streaming: false,
+                    modelId: activeModelId,
+                    messageKind: 'assistant-final',
+                });
+            }
+        }
+
+        return updated;
+    }, [activeModelId]);
+
+    const handleRuntimeControlAction = useCallback(async (action, task, stepId = '') => {
+        const taskId = String(task?.id || '').trim();
+        if (!taskId) {
+            return;
+        }
+
+        setRuntimeControlState({
+            pendingAction: action,
+            taskId,
+            stepId,
+            message: '',
+            error: '',
+        });
+
+        try {
+            const result = await requestFireflyRuntimeControl({
+                action,
+                taskId,
+                stepId,
+                uid: campusUserProfile.uid,
+                fid: campusUserProfile.fid,
+            });
+            const nextTask = result.task ? enrichTaskForStorage(result.task) : null;
+
+            if (nextTask?.id) {
+                upsertFireflyTask(nextTask);
+            }
+
+            setThreads((prev) => ({
+                ...prev,
+                [threadKey]: applyRuntimeControlResultToThread(prev[threadKey] || [], {
+                    taskId,
+                    nextTask,
+                    nextReply: result.reply,
+                }),
+            }));
+            setRuntimeControlState({
+                pendingAction: '',
+                taskId,
+                stepId,
+                message: result.message,
+                error: '',
+            });
+        } catch (error) {
+            setRuntimeControlState({
+                pendingAction: '',
+                taskId,
+                stepId,
+                message: '',
+                error: error instanceof Error ? error.message : '运行控制动作执行失败。',
+            });
+        }
+    }, [
+        applyRuntimeControlResultToThread,
+        campusUserProfile.fid,
+        campusUserProfile.uid,
+        enrichTaskForStorage,
+        threadKey,
+    ]);
 
     const setDrawerOpen = useCallback((nextValue) => {
         if (typeof isOpen === 'boolean') {
@@ -374,6 +574,13 @@ export default function FireflySideDrawer({
             onOpenChange,
         };
     }, [isOpen, onOpenChange]);
+
+    useEffect(() => {
+        setCapabilityInstalls(loadUserCapabilityInstalls(campusUserProfile));
+        return subscribeUserCapabilityInstalls(campusUserProfile, setCapabilityInstalls);
+    }, [campusUserProfile]);
+
+    useEffect(() => subscribeCampusUserProfile(setCampusUserProfile), []);
 
     useEffect(() => {
         try {
@@ -721,7 +928,7 @@ export default function FireflySideDrawer({
             messageKind: 'runtime-trace',
             runtimeTask: null,
             runtimePhase: 'planning',
-            traceExpanded: true,
+            traceExpanded: false,
         };
         const baseThread = [...cleanThread, userEntry];
 
@@ -790,6 +997,36 @@ export default function FireflySideDrawer({
                                     runtimePhase: phase,
                                     streaming: phase === 'running',
                                     modelId: activeModelId,
+                                    traceExpanded: false,
+                                },
+                            ],
+                        }));
+                    };
+                    const applyAgentReply = (task, content, streaming = true, phase = 'completed') => {
+                        setThreads((prev) => ({
+                            ...prev,
+                            [threadKey]: [
+                                ...baseThread,
+                                {
+                                    id: `${placeholderEntry.id}-trace`,
+                                    role: 'ai',
+                                    content: '',
+                                    time: new Date().toISOString(),
+                                    modelId: activeModelId,
+                                    messageKind: 'runtime-trace',
+                                    runtimeTask: task || null,
+                                    runtimePhase: phase,
+                                    streaming: phase === 'running',
+                                    traceExpanded: false,
+                                },
+                                {
+                                    id: placeholderEntry.id,
+                                    role: 'ai',
+                                    content,
+                                    time: new Date().toISOString(),
+                                    streaming,
+                                    modelId: activeModelId,
+                                    messageKind: 'assistant-final',
                                 },
                             ],
                         }));
@@ -867,6 +1104,33 @@ export default function FireflySideDrawer({
                                     continue;
                                 }
 
+                                if (parsed.type === 'reply_started') {
+                                    agentHandled = true;
+                                    shouldFallbackToChat = false;
+                                    applyAgentReply(finalTask || latestTask, '', true, finalTask?.status === 'failed' ? 'failed' : 'completed');
+                                    continue;
+                                }
+
+                                if (parsed.type === 'reply_delta') {
+                                    agentHandled = true;
+                                    shouldFallbackToChat = false;
+                                    finalReply += parsed.content || '';
+                                    applyAgentReply(finalTask || latestTask, finalReply, true, finalTask?.status === 'failed' ? 'failed' : 'completed');
+                                    continue;
+                                }
+
+                                if (parsed.type === 'reply_completed') {
+                                    agentHandled = true;
+                                    shouldFallbackToChat = false;
+                                    applyAgentReply(
+                                        finalTask || latestTask,
+                                        appendAgentModelDisclosure(finalReply, activeModelId),
+                                        false,
+                                        finalTask?.status === 'failed' ? 'failed' : 'completed'
+                                    );
+                                    continue;
+                                }
+
                                 if (parsed.type === 'done') {
                                     shouldFallbackToChat = !parsed.handled;
                                     if (parsed.handled) {
@@ -889,14 +1153,17 @@ export default function FireflySideDrawer({
                     }
 
                     if (agentHandled && !shouldFallbackToChat) {
-                        const finalContent = finalReply || (
-                            finalTask
-                                ? buildStreamingTaskContent(finalTask, finalTask.status === 'failed' ? 'failed' : 'completed')
-                                : (
-                                    typeof buildFallbackReply === 'function'
-                                        ? buildFallbackReply(mergedContext, question)
-                                        : '我已经完成这轮任务调度，你可以继续追问更具体的下一步动作。'
-                                )
+                        const finalContent = appendAgentModelDisclosure(
+                            finalReply || (
+                                finalTask
+                                    ? buildStreamingTaskContent(finalTask, finalTask.status === 'failed' ? 'failed' : 'completed')
+                                    : (
+                                        typeof buildFallbackReply === 'function'
+                                            ? buildFallbackReply(mergedContext, question)
+                                            : '我已经完成这轮任务调度，你可以继续追问更具体的下一步动作。'
+                                    )
+                            ),
+                            activeModelId
                         );
 
                         if (finalTask) {
@@ -939,6 +1206,7 @@ export default function FireflySideDrawer({
                 }
             }
 
+            const includeCampusContext = shouldInjectCampusContextForQuestion(question);
             const apiMessages = buildFallbackThreadHistory(baseThread, question).map((message, index, array) => {
                 const isLastUserMessage = message.role === 'user' && index === array.map((item) => item.role).lastIndexOf('user');
                 if (message.role !== 'user') {
@@ -949,14 +1217,14 @@ export default function FireflySideDrawer({
                     return message;
                 }
 
-                if (typeof buildContextMessage === 'function') {
+                if (includeCampusContext && typeof buildContextMessage === 'function') {
                     return {
                         ...message,
                         content: buildContextMessage({ unreadSummary, approvalSummary }, message.content),
                     };
                 }
 
-                if (unreadSummary || approvalSummary) {
+                if (includeCampusContext && (unreadSummary || approvalSummary)) {
                     return {
                         ...message,
                         content: [
@@ -1171,6 +1439,17 @@ export default function FireflySideDrawer({
                             </div>
                         )}
 
+                        <FireflyControlPlanePanel
+                            surface="drawer"
+                            threadKey={threadKey}
+                            userProfile={campusUserProfile}
+                            capabilityIds={capabilityIds}
+                            marketAccess={drawerMarketAccess}
+                            contextSnapshot={contextSnapshot}
+                            className="firefly-side-control-plane"
+                            defaultExpanded={false}
+                        />
+
                         <div className="firefly-side-messages">
                             {currentThread.length === 0 ? (
                                 <div className="firefly-side-empty">
@@ -1178,29 +1457,65 @@ export default function FireflySideDrawer({
                                     <p>{emptyDescription}</p>
                                 </div>
                             ) : (
-                                currentThread.map((message) => (
-                                    <div key={message.id} className={`firefly-side-message ${message.role}`}>
-                                        {message.messageKind === 'runtime-trace' && message.runtimeTask ? (
-                                            <FireflyRuntimeCard
-                                                task={message.runtimeTask}
-                                                compact
-                                                defaultExpanded={Boolean(message.traceExpanded)}
-                                                timeLabel={message.streaming ? '正在运行' : new Date(message.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                                            />
-                                        ) : (
-                                            <div className="firefly-side-message-body">
-                                                <div>
-                                                    {renderRichMessageContent(message.content, 'firefly-side-inline-link')}
-                                                    {message.streaming ? '…' : ''}
+                                renderableMessages.map((item) => {
+                                    if (item.type === 'assistant-with-runtime') {
+                                        const runtimeMessage = item.runtime;
+                                        const assistantMessage = item.assistant;
+
+                                        return (
+                                            <div key={item.key} className="firefly-side-message ai">
+                                                <div className="firefly-side-message-stack">
+                                                    <div className="firefly-side-message-body">
+                                                        <div>
+                                                            {renderRichMessageContent(assistantMessage.content, 'firefly-side-inline-link')}
+                                                            {assistantMessage.streaming ? '…' : ''}
+                                                        </div>
+                                                    </div>
+                                                    <FireflyRuntimeStrip
+                                                        task={runtimeMessage.runtimeTask}
+                                                        timeLabel={runtimeMessage.streaming ? '正在运行' : new Date(runtimeMessage.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                                                        defaultExpanded={Boolean(runtimeMessage.traceExpanded)}
+                                                        surface="drawer"
+                                                        controlState={runtimeControlState}
+                                                        onControlAction={handleRuntimeControlAction}
+                                                    />
+                                                </div>
+                                                <div className="firefly-side-message-meta">
+                                                    <span>萤火虫</span>
+                                                    <small>{new Date(assistantMessage.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
                                                 </div>
                                             </div>
-                                        )}
-                                        <div className="firefly-side-message-meta">
-                                            <span>{message.role === 'user' ? '我' : '萤火虫'}</span>
-                                            <small>{new Date(message.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+                                        );
+                                    }
+
+                                    const message = item.message;
+
+                                    return (
+                                        <div key={item.key} className={`firefly-side-message ${message.role}`}>
+                                            {message.messageKind === 'runtime-trace' && message.runtimeTask ? (
+                                                <FireflyRuntimeStrip
+                                                    task={message.runtimeTask}
+                                                    timeLabel={message.streaming ? '正在运行' : new Date(message.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                                                    defaultExpanded={Boolean(message.traceExpanded)}
+                                                    surface="drawer"
+                                                    controlState={runtimeControlState}
+                                                    onControlAction={handleRuntimeControlAction}
+                                                />
+                                            ) : (
+                                                <div className="firefly-side-message-body">
+                                                    <div>
+                                                        {renderRichMessageContent(message.content, 'firefly-side-inline-link')}
+                                                        {message.streaming ? '…' : ''}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="firefly-side-message-meta">
+                                                <span>{message.role === 'user' ? '我' : '萤火虫'}</span>
+                                                <small>{new Date(message.time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                             <div ref={messagesEndRef} />
                         </div>

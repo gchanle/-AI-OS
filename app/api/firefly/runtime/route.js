@@ -3,6 +3,9 @@ import {
     getFireflyRuntimeThread,
     listFireflyRuntimeState,
 } from '@/lib/fireflyRuntimeStore';
+import { getFireflyThreadState } from '@/lib/fireflyThreadStateStore';
+import { listFireflySubagentRuns } from '@/lib/fireflySubagentStore';
+import { listFireflyThreadWorkspace } from '@/lib/fireflyWorkspaceService';
 
 export async function GET(request) {
     try {
@@ -11,16 +14,24 @@ export async function GET(request) {
 
         if (threadKey) {
             const thread = await getFireflyRuntimeThread(threadKey);
+            const threadState = await getFireflyThreadState(threadKey);
+            const subagents = await listFireflySubagentRuns(threadKey);
+            const workspace = await listFireflyThreadWorkspace(threadKey);
             return NextResponse.json({
                 ok: true,
                 thread,
+                threadState,
+                subagents,
+                workspace,
             });
         }
 
         const state = await listFireflyRuntimeState();
+        const subagents = await listFireflySubagentRuns();
         return NextResponse.json({
             ok: true,
             ...state,
+            subagents: subagents.slice(0, 120),
         });
     } catch (error) {
         return NextResponse.json({

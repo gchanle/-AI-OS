@@ -533,20 +533,21 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+    padding: 0 2px;
 }
 
 .search-box-title {
-    font-size: 16px;
-    font-weight: 680;
-    color: var(--text-primary);
-    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
 }
 
 .search-box-desc {
     max-width: 720px;
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-tertiary);
 }
 
 .search-box-status,
@@ -574,28 +575,42 @@
 .search-input-area,
 .chat-input-box {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
-    min-height: 140px;
-    padding: 8px 8px 8px 6px;
+    min-height: 0;
+    padding: 14px 14px 12px;
     border-radius: 24px;
     cursor: text;
-    transition: background 0.2s ease;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-box:focus-within .search-input-area,
 .chat-input-box:focus-within {
-    background: rgba(255, 255, 255, 0.56);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 102, 204, 0.14);
+    box-shadow: 0 10px 24px rgba(0, 84, 179, 0.08);
 }
 
 .chat-input-box-minimal {
     min-height: 176px;
 }
 
+.search-textarea-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+
 .search-textarea,
 .chat-textarea {
-    flex: 1;
-    min-height: 96px;
+    display: block;
+    width: 100%;
+    min-height: 72px;
+    max-height: 220px;
     border: none;
     outline: none;
     resize: none;
@@ -603,11 +618,21 @@
     color: var(--text-primary);
     font-family: inherit;
     font-size: 16px;
-    line-height: 1.72;
+    line-height: 1.68;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
 }
 
 .chat-textarea-minimal {
     min-height: 132px;
+}
+
+.search-textarea-hint {
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-tertiary);
+    pointer-events: none;
 }
 
 .search-textarea::placeholder,
@@ -618,9 +643,10 @@
 .search-actions,
 .chat-composer-footer {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
+    min-height: 42px;
 }
 
 .search-composer-tools,

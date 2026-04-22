@@ -194,6 +194,86 @@ export function mergeWorkspacePrefs(patch = {}) {
     return next;
 }
 
+export async function loadServerWorkspacePrefs({ uid = '', fid = '' } = {}) {
+    const params = new URLSearchParams();
+    if (uid) params.set('uid', uid);
+    if (fid) params.set('fid', fid);
+
+    const response = await fetch(`/api/firefly/client-state?${params.toString()}`, {
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        throw new Error(`workspace-prefs ${response.status}`);
+    }
+
+    const payload = await response.json();
+    return payload?.state?.workspacePrefs || {};
+}
+
+export async function saveServerWorkspacePrefs({
+    uid = '',
+    fid = '',
+    workspacePrefs = {},
+} = {}) {
+    const response = await fetch('/api/firefly/client-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            uid,
+            fid,
+            workspacePrefs,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`save-workspace-prefs ${response.status}`);
+    }
+
+    const payload = await response.json();
+    return payload?.state?.workspacePrefs || {};
+}
+
+export async function loadServerChatSessions({ uid = '', fid = '' } = {}) {
+    const params = new URLSearchParams();
+    if (uid) params.set('uid', uid);
+    if (fid) params.set('fid', fid);
+
+    const response = await fetch(`/api/firefly/client-state?${params.toString()}`, {
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        throw new Error(`chat-sessions ${response.status}`);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload?.state?.chatSessions) ? payload.state.chatSessions : [];
+}
+
+export async function saveServerChatSessions({
+    uid = '',
+    fid = '',
+    chatSessions = [],
+} = {}) {
+    const response = await fetch('/api/firefly/client-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            uid,
+            fid,
+            chatSessions,
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`save-chat-sessions ${response.status}`);
+    }
+
+    const payload = await response.json();
+    return Array.isArray(payload?.state?.chatSessions) ? payload.state.chatSessions : [];
+}
+
 export function normalizeCapabilityIds(capabilityIds = []) {
     return capabilityIds
         .flat()

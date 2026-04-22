@@ -1,0 +1,983 @@
+.firefly-thread-runtime-panel {
+    width: 100%;
+    padding: 12px 14px 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-head {
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.firefly-thread-runtime-head-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.firefly-thread-runtime-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(43, 127, 255, 0.1);
+    color: #2b7fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.firefly-thread-runtime-head-copy strong {
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.firefly-thread-runtime-head-copy p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.firefly-thread-runtime-head-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.firefly-thread-runtime-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(29, 138, 67, 0.1);
+    color: #1d8a43;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-pill.pending {
+    background: rgba(217, 131, 0, 0.12);
+    color: #d98300;
+}
+
+.firefly-thread-runtime-pill.danger {
+    background: rgba(196, 73, 57, 0.12);
+    color: #c44939;
+}
+
+.firefly-thread-runtime-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-body {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.firefly-thread-runtime-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.firefly-thread-runtime-threadline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.firefly-thread-runtime-threadline span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-thread-runtime-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(43, 127, 255, 0.08);
+    color: #2b7fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.firefly-thread-runtime-link:hover {
+    background: rgba(43, 127, 255, 0.14);
+}
+
+.firefly-thread-runtime-inspector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.firefly-thread-runtime-inspector-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(250, 252, 255, 0.92);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-note-box,
+.firefly-thread-runtime-memory-item,
+.firefly-thread-runtime-tool-item,
+.firefly-thread-runtime-scope-note {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-note-box textarea,
+.firefly-thread-runtime-memory-item textarea,
+.firefly-thread-runtime-worker-control textarea,
+.firefly-thread-runtime-scope-note textarea,
+.firefly-thread-runtime-policy-grid input {
+    width: 100%;
+    min-height: 74px;
+    padding: 10px 11px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+}
+
+.firefly-thread-runtime-note-box textarea:focus,
+.firefly-thread-runtime-memory-item textarea:focus,
+.firefly-thread-runtime-worker-control textarea:focus,
+.firefly-thread-runtime-scope-note textarea:focus,
+.firefly-thread-runtime-policy-grid input:focus {
+    border-color: rgba(43, 127, 255, 0.26);
+    box-shadow: 0 0 0 3px rgba(43, 127, 255, 0.08);
+}
+
+.firefly-thread-runtime-note-box small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-inline-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.firefly-thread-runtime-inline-summary span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-policy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.firefly-thread-runtime-policy-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.firefly-thread-runtime-policy-grid span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-thread-runtime-policy-grid select {
+    width: 100%;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+}
+
+.firefly-thread-runtime-policy-grid select:focus {
+    border-color: rgba(43, 127, 255, 0.26);
+    box-shadow: 0 0 0 3px rgba(43, 127, 255, 0.08);
+}
+
+.firefly-thread-runtime-policy-grid input {
+    min-height: 36px;
+    resize: none;
+}
+
+.firefly-thread-runtime-policy-hint {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.firefly-thread-runtime-panel-note {
+    padding: 9px 10px;
+    border-radius: 12px;
+    background: rgba(43, 127, 255, 0.08);
+    color: #2b7fff;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-preview-card {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 11px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1px solid rgba(43, 127, 255, 0.1);
+}
+
+.firefly-thread-runtime-preview-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.firefly-thread-runtime-preview-head strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.firefly-thread-runtime-preview-head span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.firefly-thread-runtime-preview-list p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.firefly-thread-runtime-diff-box {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.firefly-thread-runtime-diff-box strong {
+    color: var(--text-primary);
+    font-size: 11px;
+}
+
+.firefly-thread-runtime-suggestion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-suggestion-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.firefly-thread-runtime-suggestion-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.firefly-thread-runtime-suggestion-group-head strong {
+    color: var(--text-primary);
+    font-size: 11px;
+}
+
+.firefly-thread-runtime-suggestion-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(245, 249, 255, 0.9);
+    border: 1px solid rgba(43, 127, 255, 0.08);
+}
+
+.firefly-thread-runtime-suggestion-card .firefly-thread-runtime-preview-list {
+    flex: 1;
+    min-width: 0;
+}
+
+.firefly-thread-runtime-suggestion-card p strong {
+    color: var(--text-primary);
+    font-size: 11px;
+}
+
+.firefly-thread-runtime-control-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(245, 249, 255, 0.92);
+    border: 1px solid rgba(43, 127, 255, 0.1);
+}
+
+.firefly-thread-runtime-control-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.firefly-thread-runtime-control-copy strong {
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.firefly-thread-runtime-control-copy span {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.firefly-thread-runtime-control-actions,
+.firefly-thread-runtime-worker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-step-note-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.firefly-thread-runtime-step-note-grid.compact {
+    grid-template-columns: 1fr;
+}
+
+.firefly-thread-runtime-scope-note {
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.64);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-scope-note-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.firefly-thread-runtime-scope-note-head strong {
+    color: var(--text-primary);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.firefly-thread-runtime-scope-note-head span {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.firefly-thread-runtime-control-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.firefly-thread-runtime-control-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(43, 127, 255, 0.18);
+}
+
+.firefly-thread-runtime-control-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.firefly-thread-runtime-control-button.primary {
+    background: rgba(43, 127, 255, 0.1);
+    border-color: rgba(43, 127, 255, 0.18);
+    color: #2b7fff;
+}
+
+.firefly-thread-runtime-control-button.primary:hover:not(:disabled) {
+    background: rgba(43, 127, 255, 0.16);
+}
+
+.firefly-thread-runtime-control-button.danger {
+    background: rgba(196, 73, 57, 0.08);
+    border-color: rgba(196, 73, 57, 0.14);
+    color: #c44939;
+}
+
+.firefly-thread-runtime-control-button.danger:hover:not(:disabled) {
+    background: rgba(196, 73, 57, 0.14);
+}
+
+.firefly-thread-runtime-control-feedback {
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-active-note {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(43, 127, 255, 0.08);
+}
+
+.firefly-thread-runtime-active-note-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.firefly-thread-runtime-active-note-head strong {
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.firefly-thread-runtime-active-note p {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.firefly-thread-runtime-control-feedback.success {
+    background: rgba(29, 138, 67, 0.08);
+    color: #1d8a43;
+}
+
+.firefly-thread-runtime-control-feedback.error {
+    background: rgba(196, 73, 57, 0.08);
+    color: #a13b30;
+}
+
+.firefly-thread-runtime-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.firefly-thread-runtime-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(248, 250, 255, 0.9);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-metric small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-thread-runtime-metric strong {
+    color: var(--text-primary);
+    font-size: 18px;
+    line-height: 1.1;
+}
+
+.firefly-thread-runtime-metric span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.firefly-thread-runtime-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    gap: 14px;
+}
+
+.firefly-thread-runtime-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.firefly-thread-runtime-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.firefly-thread-runtime-section-head strong {
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.firefly-thread-runtime-section-head span {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-thread-runtime-paths {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.firefly-thread-runtime-paths div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.03);
+}
+
+.firefly-thread-runtime-paths small,
+.firefly-thread-runtime-file-columns small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.firefly-thread-runtime-paths span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.firefly-thread-runtime-list,
+.firefly-thread-runtime-worker-list,
+.firefly-thread-runtime-events {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-item,
+.firefly-thread-runtime-worker,
+.firefly-thread-runtime-supervisor,
+.firefly-thread-runtime-memory-item,
+.firefly-thread-runtime-tool-item {
+    padding: 11px 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.03);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-item-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.firefly-thread-runtime-item-top strong {
+    color: var(--text-primary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.firefly-thread-runtime-item-top span {
+    color: var(--text-secondary);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.firefly-thread-runtime-item small,
+.firefly-thread-runtime-worker small,
+.firefly-thread-runtime-supervisor small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-item p,
+.firefly-thread-runtime-worker p,
+.firefly-thread-runtime-memory-item p {
+    margin: 8px 0 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.firefly-thread-runtime-step-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.firefly-thread-runtime-step {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 9px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.firefly-thread-runtime-step-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.firefly-thread-runtime-step-copy strong {
+    color: var(--text-primary);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.firefly-thread-runtime-step-copy small {
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.firefly-thread-runtime-step-directive {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(43, 127, 255, 0.08);
+}
+
+.firefly-thread-runtime-step-directive span {
+    color: #2b7fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-step-directive p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-step em {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-style: normal;
+    white-space: nowrap;
+}
+
+.firefly-thread-runtime-step-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.9);
+}
+
+.firefly-thread-runtime-step.running .firefly-thread-runtime-step-dot {
+    background: #2b7fff;
+    box-shadow: 0 0 0 4px rgba(43, 127, 255, 0.12);
+}
+
+.firefly-thread-runtime-step.completed .firefly-thread-runtime-step-dot {
+    background: #1d8a43;
+}
+
+.firefly-thread-runtime-step.failed .firefly-thread-runtime-step-dot {
+    background: #c44939;
+}
+
+.firefly-thread-runtime-step.awaiting_approval .firefly-thread-runtime-step-dot {
+    background: #d98300;
+    box-shadow: 0 0 0 4px rgba(217, 131, 0, 0.12);
+}
+
+.firefly-thread-runtime-worker-control {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-worker.running,
+.firefly-thread-runtime-supervisor {
+    border-color: rgba(43, 127, 255, 0.16);
+    background: rgba(43, 127, 255, 0.04);
+}
+
+.firefly-thread-runtime-worker.completed {
+    border-color: rgba(29, 138, 67, 0.16);
+    background: rgba(29, 138, 67, 0.04);
+}
+
+.firefly-thread-runtime-worker.failed {
+    border-color: rgba(196, 73, 57, 0.16);
+    background: rgba(196, 73, 57, 0.04);
+}
+
+.firefly-thread-runtime-worker.awaiting_approval,
+.firefly-thread-runtime-worker.paused,
+.firefly-thread-runtime-worker.rejected {
+    border-color: rgba(217, 131, 0, 0.16);
+    background: rgba(217, 131, 0, 0.05);
+}
+
+.firefly-thread-runtime-worker-meta,
+.firefly-thread-runtime-subagent-summary {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.firefly-thread-runtime-worker-meta span,
+.firefly-thread-runtime-subagent-summary span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-artifacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-artifacts a,
+.firefly-thread-runtime-artifacts span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-decoration: none;
+    max-width: 100%;
+    word-break: break-all;
+}
+
+.firefly-thread-runtime-artifacts a {
+    color: #2b7fff;
+}
+
+.firefly-thread-runtime-file-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.firefly-thread-runtime-file-columns > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.firefly-thread-runtime-event {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.firefly-thread-runtime-event-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+    background: #2b7fff;
+}
+
+.firefly-thread-runtime-event-dot.warning {
+    background: #d98300;
+}
+
+.firefly-thread-runtime-event-dot.error {
+    background: #c44939;
+}
+
+.firefly-thread-runtime-event strong {
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.firefly-thread-runtime-event-flags {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.firefly-thread-runtime-event-flags span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(43, 127, 255, 0.08);
+    color: #2b7fff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.firefly-thread-runtime-event p {
+    margin: 4px 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.firefly-thread-runtime-event small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.firefly-thread-runtime-empty {
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.04);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+.firefly-thread-runtime-empty.danger {
+    background: rgba(196, 73, 57, 0.08);
+    color: #a13b30;
+}
+
+@media (max-width: 1024px) {
+    .firefly-thread-runtime-inspector-grid,
+    .firefly-thread-runtime-policy-grid,
+    .firefly-thread-runtime-metrics,
+    .firefly-thread-runtime-grid,
+    .firefly-thread-runtime-paths,
+    .firefly-thread-runtime-file-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .firefly-thread-runtime-panel {
+        padding: 12px;
+    }
+
+    .firefly-thread-runtime-head {
+        flex-direction: column;
+    }
+
+    .firefly-thread-runtime-head-meta,
+    .firefly-thread-runtime-topbar {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
